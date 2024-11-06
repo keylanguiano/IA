@@ -50,75 +50,93 @@ int SZ = 20;
 
 int main (void)
 {
-   // PART A: LOAD THE SAMPLES
-   // The goal is split the mosaic and conform the vectors trainImages, testImages, trainLabels, testLabels
+    int opcion = -1;
 
-    string pathName = "../images/digit_recognition/digits.png";
-    vector <Mat> trainImages;
-    vector <Mat> testImages;
-    vector <int> trainLabels;
-    vector <int> testLabels;
-    loadImagesAndLabelsForTrainAndTest (pathName, trainImages, testImages, trainLabels, testLabels);
+    do
+    {
+        cout << "\n IA PRACTICE | ANN MLP RECOGNIZER OF FONT TYPES IN TEXTS. \n" << endl;
 
-    cout << "Train labels in an int array of size: " << trainLabels.size () << "\n";
-    cout << "Test labels in an int array of size: " << testLabels.size () << "\n\n";
+        cout << "ESTE PROGRAMA PUEDE REALIZAR LAS SIGUIENTES TAREAS:" << endl;
+        cout << "\t 1. EXTRAER LAS CARACTERISTICAS Y GUARDAR EN UN ARCHIVO .CVS" << endl;
+        cout << "\t 2. CARGAR EL ARCHIVO .CVS PARA SEPARAR LAS MATRICES DE ENTRENAMIENTO Y PRUEBA" << endl;
+        cout << "\t 3. ENTRENAR LA ANN MLP CON LAS MATRICES CARGADAS EN EL SISTEMA Y GUARDAR EL MODELO" << endl;
+        cout << "\t 4. PROBAR EL MODELO CON LA MATRIZ DE PRUEBA" << endl;
+        cout << "\t 5. PROBAR EL MODELO CON UNA IMAGEN" << endl;
 
-   // PART B: FEATURE EXTRACTION
-   // The goal is to conform four matrices     [ columns   x    rows       ]:
-   // trainMat:       float-type image of size [ nFeatures x nTrainSamples ]
-   // testMat:        float-type image of size [ nFeatures x nTestSamples  ]
-   // trainLabelsMat: uchar-type image of size [     1     x nTrainSamples ]
-   // testLabelsMat:  uchar-type image of size [     1     x nTestSamples  ]
+        cout << "OPCION: ";
+        cin >> opcion;
 
-    Mat trainMat, testMat, trainLabelsMat, testLabelsMat;
-    syFeatureMatricesForTestAndTrain (trainImages, testImages, trainLabels, testLabels, trainMat, testMat, trainLabelsMat, testLabelsMat);
+    } while (opcion != 0);
 
-    cout << "Descriptor Size : " << trainMat.cols << endl;
-    cout << "\n\nWARNING: All matrix sizes are given in a [ columns x rows ] format:\n\n";
-    cout << "Training Mat size: " << trainMat.size () << "\n";
-    cout << "Testing  Mat size: " << testMat.size () << "\n\n";
-    cout << "Train labels Mat size: " << trainLabelsMat.size () << "\n";
-    cout << "Test labels Mat size: " << testLabelsMat.size () << "\n\n\n";
+   //// PART A: LOAD THE SAMPLES
+   //// The goal is split the mosaic and conform the vectors trainImages, testImages, trainLabels, testLabels
 
-   // PART C: TRAINING A CLASSSIFIER
-   // The goal is to create/train/save an ANN specifically a Multilayer Perceptron
+   // string pathName = "../images/digit_recognition/digits.png";
+   // vector <Mat> trainImages;
+   // vector <Mat> testImages;
+   // vector <int> trainLabels;
+   // vector <int> testLabels;
+   // loadImagesAndLabelsForTrainAndTest (pathName, trainImages, testImages, trainLabels, testLabels);
 
-    // ANN creation
-    int nFeatures = trainMat.cols;
-    int nClasses = 10;
-    cout << "\n\nThe number of different classes is " << nClasses << "\n\n";
+   // cout << "Train labels in an int array of size: " << trainLabels.size () << "\n";
+   // cout << "Test labels in an int array of size: " << testLabels.size () << "\n\n";
 
-    Ptr <ml::ANN_MLP> ann;
-    syANN_MLP_CreateBasic (ann,nFeatures,nClasses);
+   //// PART B: FEATURE EXTRACTION
+   //// The goal is to conform four matrices     [ columns   x    rows       ]:
+   //// trainMat:       float-type image of size [ nFeatures x nTrainSamples ]
+   //// testMat:        float-type image of size [ nFeatures x nTestSamples  ]
+   //// trainLabelsMat: uchar-type image of size [     1     x nTrainSamples ]
+   //// testLabelsMat:  uchar-type image of size [     1     x nTestSamples  ]
 
-    // ANN training (the model is saved)
+   // Mat trainMat, testMat, trainLabelsMat, testLabelsMat;
+   // syFeatureMatricesForTestAndTrain (trainImages, testImages, trainLabels, testLabels, trainMat, testMat, trainLabelsMat, testLabelsMat);
 
-    // Filename for saving/loading trained models
-    char *filename_ANNmodel = "ANNdigitsClassifierModel.yml";
-    // Train and save the model
-    syANN_MLP_TrainAndSave(ann,trainMat,trainLabelsMat,nClasses,filename_ANNmodel);
+   // cout << "Descriptor Size : " << trainMat.cols << endl;
+   // cout << "\n\nWARNING: All matrix sizes are given in a [ columns x rows ] format:\n\n";
+   // cout << "Training Mat size: " << trainMat.size () << "\n";
+   // cout << "Testing  Mat size: " << testMat.size () << "\n\n";
+   // cout << "Train labels Mat size: " << trainLabelsMat.size () << "\n";
+   // cout << "Test labels Mat size: " << testLabelsMat.size () << "\n\n\n";
 
-    // PART D: THE TEST (USING A PRE-TRAINED MODEL)
-    cout << "\n\nLoading a trained model from file.\n\n";
-    // Now, we can load the saved model
-    Ptr <ANN_MLP> annTRAINED = cv::ml::ANN_MLP::load (filename_ANNmodel);
-    // and perform the test
-    syANN_MLP_Test (annTRAINED, testMat, testLabelsMat, nClasses);
+   //// PART C: TRAINING A CLASSSIFIER
+   //// The goal is to create/train/save an ANN specifically a Multilayer Perceptron
 
-    // PART E: SINGLE-IMAGE TEST
-    // classifying the featues of an image under test
-    cout << "\n\nPerforming a single-image test\n\n";
+   // // ANN creation
+   // int nFeatures = trainMat.cols;
+   // int nClasses = 10;
+   // cout << "\n\nThe number of different classes is " << nClasses << "\n\n";
 
-    string filename = "../images/digit_recognition/testB.jpg";
-    int label = syANN_MLP_Test_Single(filename,annTRAINED);
-    cout << "\nPredicted class for \"" << filename << "\" is: " << label << endl;
+   // Ptr <ml::ANN_MLP> ann;
+   // syANN_MLP_CreateBasic (ann,nFeatures,nClasses);
 
-    string file2 = "../images/digit_recognition/testD.jpg";
-    cout << "\nPredicted class for \"" << file2 << "\" is: " << syANN_MLP_Test_Single (file2, annTRAINED) << endl;
+   // // ANN training (the model is saved)
 
-    string file3 =  "../images/digit_recognition/download.png";
-    Mat testImage = imread (file3, IMREAD_GRAYSCALE);
-    cout << "\nPredicted class for \"" << file3 << "\" is: " << syANN_MLP_Test_Single (file3, annTRAINED) << endl;
+   // // Filename for saving/loading trained models
+   // char *filename_ANNmodel = "ANNdigitsClassifierModel.yml";
+   // // Train and save the model
+   // syANN_MLP_TrainAndSave(ann,trainMat,trainLabelsMat,nClasses,filename_ANNmodel);
+
+   // // PART D: THE TEST (USING A PRE-TRAINED MODEL)
+   // cout << "\n\nLoading a trained model from file.\n\n";
+   // // Now, we can load the saved model
+   // Ptr <ANN_MLP> annTRAINED = cv::ml::ANN_MLP::load (filename_ANNmodel);
+   // // and perform the test
+   // syANN_MLP_Test (annTRAINED, testMat, testLabelsMat, nClasses);
+
+   // // PART E: SINGLE-IMAGE TEST
+   // // classifying the featues of an image under test
+   // cout << "\n\nPerforming a single-image test\n\n";
+
+   // string filename = "../images/digit_recognition/testB.jpg";
+   // int label = syANN_MLP_Test_Single(filename,annTRAINED);
+   // cout << "\nPredicted class for \"" << filename << "\" is: " << label << endl;
+
+   // string file2 = "../images/digit_recognition/testD.jpg";
+   // cout << "\nPredicted class for \"" << file2 << "\" is: " << syANN_MLP_Test_Single (file2, annTRAINED) << endl;
+
+   // string file3 =  "../images/digit_recognition/download.png";
+   // Mat testImage = imread (file3, IMREAD_GRAYSCALE);
+   // cout << "\nPredicted class for \"" << file3 << "\" is: " << syANN_MLP_Test_Single (file3, annTRAINED) << endl;
 
     return 0;
 }
@@ -221,7 +239,7 @@ int syFeatureMatricesForTestAndTrain (vector <Mat> & trainImages, vector <Mat> &
     for (int r = 0; r < trainLabelsMat.rows; r ++)
         trainLabelsMat.at <uchar> (r, 0) = trainLabels [r];
 
-    testLabelsMat = Mat::zeros (testLabels.size () 1, CV_8UC1);
+    testLabelsMat = Mat::zeros (testLabels.size (), 1, CV_8UC1);
     
     for (int r = 0; r < testLabelsMat.rows; r ++)
         testLabelsMat.at <uchar> (r, 0) = testLabels [r];
