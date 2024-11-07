@@ -50,11 +50,21 @@ int SZ = 20;
 
 int main (void)
 {
+    // CASE 1 VARIABLES:
+    string pathName = "digits.png";
+    vector <Mat> trainImages;
+    vector <Mat> testImages;
+    vector <int> trainLabels;
+    vector <int> testLabels;
+
+    // CASE 2 VARIABLES:
+    Mat trainMat, testMat, trainLabelsMat, testLabelsMat;
+
     int opcion = -1;
 
     do
     {
-        cout << "\n IA PRACTICE | ANN MLP RECOGNIZER OF FONT TYPES IN TEXTS. \n" << endl;
+        cout << "\nIA PRACTICE | ANN MLP RECOGNIZER OF FONT TYPES IN TEXTS. \n" << endl;
 
         cout << "ESTE PROGRAMA PUEDE REALIZAR LAS SIGUIENTES TAREAS:" << endl;
         cout << "\t 1. EXTRAER LAS CARACTERISTICAS Y GUARDAR EN UN ARCHIVO .CVS" << endl;
@@ -62,10 +72,43 @@ int main (void)
         cout << "\t 3. ENTRENAR LA ANN MLP CON LAS MATRICES CARGADAS EN EL SISTEMA Y GUARDAR EL MODELO" << endl;
         cout << "\t 4. PROBAR EL MODELO CON LA MATRIZ DE PRUEBA" << endl;
         cout << "\t 5. PROBAR EL MODELO CON UNA IMAGEN" << endl;
+        cout << "\t 0. SALIR" << endl;
 
         cout << "OPCION: ";
         cin >> opcion;
 
+        switch (opcion) {
+            case 1:
+                loadImagesAndLabelsForTrainAndTest(pathName, trainImages, testImages, trainLabels, testLabels);
+
+                cout << "Train labels in an int array of size: " << trainLabels.size() << "\n";
+                cout << "Test labels in an int array of size: " << testLabels.size() << "\n\n";
+                cin.get();
+                break;
+            
+            case 2:
+                syFeatureMatricesForTestAndTrain(trainImages, testImages, trainLabels, testLabels, trainMat, testMat, trainLabelsMat, testLabelsMat);
+
+                cout << "DESCRIPTOR SIZE : " << trainMat.cols << endl;
+                cout << "\n\nWARNING: ALL MATRIX SIZES ARE GIVEN IN A [ COLUMNS X ROWS ] FORMAT:\n\n";
+                cout << "TRAINING MAT SIZE: " << trainMat.size() << "\n";
+                cout << "TESTING  MAT SIZE: " << testMat.size() << "\n\n";
+                cout << "TRAIN LABELS MAT SIZE: " << trainLabelsMat.size() << "\n";
+                cout << "TEST LABELS MAT SIZE: " << testLabelsMat.size() << "\n\n\n";
+                break;
+
+            case 3:
+                break;
+
+            case 4:
+                break;
+
+            case 5:
+                break;
+
+            default:
+                break;
+        }
     } while (opcion != 0);
 
    //// PART A: LOAD THE SAMPLES
@@ -165,52 +208,61 @@ int syANN_MLP_Test_Single (string filename, Ptr <ml::ANN_MLP> & annTRAINED)
 }
 
 // LOAD SAMPLES
-void loadImagesAndLabelsForTrainAndTest (string & pathName, vector <Mat> & trainImages, vector <Mat> & testImages, vector <int> & trainLabels, vector <int> & testLabels)
+void loadImagesAndLabelsForTrainAndTest(string &pathName, vector <Mat> &trainImages, vector <Mat> &testImages, vector <int> &trainLabels, vector <int> &testLabels)
 {
-    Mat img = imread (pathName, cv::IMREAD_GRAYSCALE);
-    int ImgCount = 0;
+    Mat img = imread("pathName", cv::IMREAD_GRAYSCALE);
+    
+    if (img.empty()) {
+        cout << "\nERROR: IMAGEN NO CARGADA. VERIFICA LA RUTA DE ARCHIVO." << endl;
+        cout << "PRESIONE CUALQUIER BOTON PARA CONTINUAR" << endl;
+        cin.get();
 
-    for (int i = 0; i < img.rows; i = i + SZ)
-    {
-        for (int j = 0; j < img.cols; j = j + SZ)
-        {
-            Mat digitImg = (img.colRange (j, j + SZ).rowRange (i, i + SZ)).clone ();
-            
-            if (j < int (0.9 * img.cols))
-            {
-                trainImages.push_back (digitImg);
-            }
-            else
-            {
-                testImages.push_back (digitImg);
-            }
-            ImgCount ++;
-        }
+        return;
     }
-
-    cout << "Image Count : " << ImgCount << endl;
-    float digitClassNumber = 0;
-
-    for (int z = 0; z <int (0.9 * ImgCount); z ++)
-    {
-        if (z % 450 == 0 && z != 0)
+    else {
+        int ImgCount = 0;
+        for(int i = 0; i < img.rows; i = i + SZ)
         {
-            digitClassNumber = digitClassNumber + 1;
+            for(int j = 0; j < img.cols; j = j + SZ)
+            {
+                Mat digitImg = (img.colRange(j, j + SZ).rowRange(i, i + SZ)).clone();
+
+                if (j < int(0.9 * img.cols))
+                {
+                    trainImages.push_back(digitImg);
+                }
+                else
+                {
+                    testImages.push_back(digitImg);
+                }
+                ImgCount++;
+            }
         }
 
-        trainLabels.push_back (digitClassNumber);
-    }
+        cout << "Image Count : " << ImgCount << endl;
+        float digitClassNumber = 0;
 
-    digitClassNumber = 0;
-
-    for (int z = 0; z <int (0.1 * ImgCount); z ++)
-    {
-        if (z % 50 == 0 && z != 0)
+        for (int z = 0; z <int(0.9 * ImgCount); z++)
         {
-            digitClassNumber = digitClassNumber + 1;
+            if (z % 450 == 0 && z != 0)
+            {
+                digitClassNumber = digitClassNumber + 1;
+            }
+
+            trainLabels.push_back(digitClassNumber);
         }
 
-        testLabels.push_back (digitClassNumber);
+        digitClassNumber = 0;
+
+        for (int z = 0; z <int(0.1 * ImgCount); z++)
+        {
+            if (z % 50 == 0 && z != 0)
+            {
+                digitClassNumber = digitClassNumber + 1;
+            }
+
+            testLabels.push_back(digitClassNumber);
+        }
     }
 }
 
