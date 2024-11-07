@@ -48,10 +48,10 @@ int syANN_MLP_Test_Single (string filename, Ptr <ml::ANN_MLP> & annTRAINED);
 // Corresponds to the size of sub-images
 int SZ = 20;
 
-int main (void)
+int main(void)
 {
     // CASE 1 VARIABLES:
-    string pathName = "digits.png";
+    string pathName = " ";
     vector <Mat> trainImages;
     vector <Mat> testImages;
     vector <int> trainLabels;
@@ -60,7 +60,17 @@ int main (void)
     // CASE 2 VARIABLES:
     Mat trainMat, testMat, trainLabelsMat, testLabelsMat;
 
-    int opcion = -1;
+    // CASE 3 VARIABLES:
+    int nFeatures = 0;
+    int nClasses = 0;
+    Ptr <ml::ANN_MLP> ann;
+    char* filename_ANNmodel = nullptr;
+
+    // CASE 4 VARIABLES:
+    Ptr<ANN_MLP> annTRAINED;
+
+
+    char opcion = ' ';
 
     do
     {
@@ -72,24 +82,28 @@ int main (void)
         cout << "\t 3. ENTRENAR LA ANN MLP CON LAS MATRICES CARGADAS EN EL SISTEMA Y GUARDAR EL MODELO" << endl;
         cout << "\t 4. PROBAR EL MODELO CON LA MATRIZ DE PRUEBA" << endl;
         cout << "\t 5. PROBAR EL MODELO CON UNA IMAGEN" << endl;
-        cout << "\t 0. SALIR" << endl;
+        cout << "INGRESE CUALQUIER TECLA PARA SALIR" << endl;
 
         cout << "OPCION: ";
         cin >> opcion;
 
         switch (opcion) {
-            case 1:
+            case '1':
+                pathName = "digits.png";
                 loadImagesAndLabelsForTrainAndTest(pathName, trainImages, testImages, trainLabels, testLabels);
 
-                cout << "Train labels in an int array of size: " << trainLabels.size() << "\n";
-                cout << "Test labels in an int array of size: " << testLabels.size() << "\n\n";
+                if (!trainImages.empty() && !testImages.empty() && !trainLabels.empty() && !testLabels.empty())
+                {
+                    cout << "TRAIN LABELS IN AN INT ARRAY OF SIZE: " << trainLabels.size() << "\n";
+                    cout << "TEST LABELS IN AN INT ARRAY OF SIZE: " << testLabels.size() << "\n\n";
+                }
                 cin.get();
                 break;
             
-            case 2:
+            case '2':
                 syFeatureMatricesForTestAndTrain(trainImages, testImages, trainLabels, testLabels, trainMat, testMat, trainLabelsMat, testLabelsMat);
 
-                cout << "DESCRIPTOR SIZE : " << trainMat.cols << endl;
+                cout << "'\nDESCRIPTOR SIZE : " << trainMat.cols << endl;
                 cout << "\n\nWARNING: ALL MATRIX SIZES ARE GIVEN IN A [ COLUMNS X ROWS ] FORMAT:\n\n";
                 cout << "TRAINING MAT SIZE: " << trainMat.size() << "\n";
                 cout << "TESTING  MAT SIZE: " << testMat.size() << "\n\n";
@@ -97,19 +111,36 @@ int main (void)
                 cout << "TEST LABELS MAT SIZE: " << testLabelsMat.size() << "\n\n\n";
                 break;
 
-            case 3:
+            case '3':
+                nFeatures = trainMat.cols;
+                nClasses = 10;
+                cout << "\n\nTHE NUMBER OF DIFFERENT CLASSES IS " << nClasses << "\n\n";
+
+                syANN_MLP_CreateBasic (ann,nFeatures,nClasses);
+
+                // Filename for saving/loading trained models
+                filename_ANNmodel = "ANNdigitsClassifierModel.yml";
+
+                // Train and save the model
+                syANN_MLP_TrainAndSave(ann,trainMat,trainLabelsMat,nClasses,filename_ANNmodel);
                 break;
 
-            case 4:
+            case '4':
+                cout << "\n\nLoading a trained model from file.\n\n";
+                // Now, we can load the saved model
+                annTRAINED = cv::ml::ANN_MLP::load(filename_ANNmodel);
+                
+                // and perform the test
+                syANN_MLP_Test(annTRAINED, testMat, testLabelsMat, nClasses);
                 break;
 
-            case 5:
+            case '5':
                 break;
 
             default:
-                break;
+                return 0;
         }
-    } while (opcion != 0);
+    } while (1);
 
    //// PART A: LOAD THE SAMPLES
    //// The goal is split the mosaic and conform the vectors trainImages, testImages, trainLabels, testLabels
@@ -210,7 +241,7 @@ int syANN_MLP_Test_Single (string filename, Ptr <ml::ANN_MLP> & annTRAINED)
 // LOAD SAMPLES
 void loadImagesAndLabelsForTrainAndTest(string &pathName, vector <Mat> &trainImages, vector <Mat> &testImages, vector <int> &trainLabels, vector <int> &testLabels)
 {
-    Mat img = imread("pathName", cv::IMREAD_GRAYSCALE);
+    Mat img = imread(pathName, cv::IMREAD_GRAYSCALE);
     
     if (img.empty()) {
         cout << "\nERROR: IMAGEN NO CARGADA. VERIFICA LA RUTA DE ARCHIVO." << endl;
@@ -239,7 +270,7 @@ void loadImagesAndLabelsForTrainAndTest(string &pathName, vector <Mat> &trainIma
             }
         }
 
-        cout << "Image Count : " << ImgCount << endl;
+        cout << "\nIMAGE COUNT: " << ImgCount << endl;
         float digitClassNumber = 0;
 
         for (int z = 0; z <int(0.9 * ImgCount); z++)
