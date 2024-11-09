@@ -26,6 +26,7 @@ HOGDescriptor hog
 );
 
 // For loading the samples
+void processImage(const std::string& imagePath);
 void loadImagesAndLabelsForTrainAndTest (string & pathName, vector <Mat> & trainImages, vector <Mat> & testImages, vector <int> & trainLabels, vector <int> & testLabels);
 
 // Preprocessing
@@ -270,6 +271,90 @@ int syANN_MLP_Test_Single (string filename, Ptr <ml::ANN_MLP> & annTRAINED)
 }
 
 // LOAD SAMPLES
+void processImage(const std::string& imagePath) {
+    // Cargar imagen
+    cv::Mat image = cv::imread(imagePath);
+    if (image.empty()) {
+        std::cerr << "No se pudo cargar la imagen" << std::endl;
+        return;
+    }
+
+    // Convertir a escala de grises
+    cv::Mat gray;
+    cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
+
+    // Aplicar umbral para convertir a binaria
+    cv::Mat binary;
+    cv::threshold(gray, binary, 150, 255, cv::THRESH_BINARY_INV);
+
+    // Aplicar morfología para juntar caracteres cercanos
+    cv::Mat morph;
+    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(15, 5));
+    cv::morphologyEx(binary, morph, cv::MORPH_CLOSE, kernel);
+
+    // Encontrar contornos
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(morph, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    // Crear una copia de la imagen original para dibujar los rectángulos
+    cv::Mat result = image.clone();
+    std::vector<cv::Mat> textBlocks;
+    cv::Mat textBlock;
+
+    // Variables para el rectángulo delimitador
+    int minX = image.cols, minY = image.rows, maxX = 0, maxY = 0;
+
+    // Iterar sobre cada contorno para obtener los rectángulos de texto
+    for (size_t i = 0; i < contours.size(); i++) {
+        cv::Rect rect = cv::boundingRect(contours[i]);
+
+        // Dibujar rectángulo en la imagen (opcional)
+        cv::rectangle(result, rect, cv::Scalar(0, 255, 0), 2);
+
+        // Actualizar los límites del rectángulo delimitador
+        minX = std::min(minX, rect.x);
+        minY = std::min(minY, rect.y);
+        maxX = std::max(maxX, rect.x + rect.width);
+        maxY = std::max(maxY, rect.y + rect.height);
+
+        // Recortar la región de texto
+        textBlock = image(rect);
+        if (textBlock.cols < image.cols) {
+            cv::copyMakeBorder(textBlock, textBlock, 0, 0, 0, image.cols - textBlock.cols, cv::BORDER_CONSTANT, cv::Scalar(255));
+        }
+        textBlocks.push_back(textBlock);
+    }
+
+    // Recortar la imagen result al tamaño de los contornos verdes
+    cv::Rect boundingRect(minX, minY, maxX - minX, maxY - minY);
+    cv::Mat croppedResult = result(boundingRect);
+
+    // Eliminar los contornos verdes de la imagen recortada
+    for (size_t i = 0; i < contours.size(); i++) {
+        cv::Rect rect = cv::boundingRect(contours[i]);
+        cv::Mat roi = croppedResult(rect - cv::Point(minX, minY));
+        image(rect).copyTo(roi);
+    }
+
+    // Crear una máscara para identificar los píxeles verdes
+    cv::Mat greenMask;
+    cv::inRange(croppedResult, cv::Scalar(0, 255, 0), cv::Scalar(0, 255, 0), greenMask);
+
+    // Eliminar los píxeles verdes de la imagen recortada
+    cv::Mat finalResult = croppedResult.clone();
+    finalResult.setTo(cv::Scalar(255, 255, 255), greenMask);
+
+    // Convertir la imagen final a negativo
+    cv::Mat negativeResult;
+    cv::bitwise_not(finalResult, negativeResult);
+
+    // Guardar o mostrar la imagen recortada sin contornos verdes y en negativo
+    cv::imshow("Negative Result", negativeResult);
+    cv::imwrite("negative_result.png", negativeResult);
+
+    cv::waitKey(0);
+}
+
 void loadImagesAndLabelsForTrainAndTest(string &pathName, vector <Mat> &trainImages, vector <Mat> &testImages, vector <int> &trainLabels, vector <int> &testLabels)
 {
     Mat img = imread(pathName, cv::IMREAD_GRAYSCALE);
