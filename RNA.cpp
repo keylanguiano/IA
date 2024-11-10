@@ -1,12 +1,16 @@
 #include <iostream>
+#include <filesystem>
+#include <fstream>
 using namespace std;
 
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 #include "opencv2/objdetect.hpp"
 #include <opencv2/ml.hpp>
+#include <opencv2/opencv.hpp>
 using namespace cv::ml;
 using namespace cv;
+namespace fs = std::filesystem;
 
 // For feature extraction
 HOGDescriptor hog
@@ -47,6 +51,10 @@ int syANN_MLP_TrainAndSave( Ptr <ml::ANN_MLP> & ann, Mat & train_data, Mat & tra
 int syANN_MLP_Test (Ptr <ml::ANN_MLP> & ann, Mat & test_data, Mat & testLabelsMat, int nClasses);
 int syANN_MLP_Test_Single (string filename, Ptr <ml::ANN_MLP> & annTRAINED);
 
+//Extract CSV
+void extractTextureFeatures(const Mat &image, vector<float> &features);
+void saveToCSV(const string &filename, const vector<vector<float>> &data, const vector<string> &labels);
+void processImagesAndSaveFeatures();
 
 // Global variable
 // Corresponds to the size of sub-images
@@ -101,6 +109,9 @@ int main(void)
 
         switch (opcion) {
             case '1':
+
+                processImagesAndSaveFeatures();
+                /*
                 cout << "------------------------------------------------------" << endl;
                 pathName = "digits.png";
                 loadImagesAndLabelsForTrainAndTest(pathName, trainImages, testImages, trainLabels, testLabels);
@@ -110,9 +121,11 @@ int main(void)
                     cout << "TRAIN LABELS IN AN INT ARRAY OF SIZE: " << trainLabels.size() << "\n";
                     cout << "TEST LABELS IN AN INT ARRAY OF SIZE: " << testLabels.size() << "\n\n";
                 }
+                */
+
                 system("pause");
                 break;
-            
+
             case '2':
                 cout << "------------------------------------------------------" << endl;
                 syFeatureMatricesForTestAndTrain(trainImages, testImages, trainLabels, testLabels, trainMat, testMat, trainLabelsMat, testLabelsMat);
@@ -155,7 +168,7 @@ int main(void)
 
             case '6':
                 cout << "------------------------------------------------------" << endl;
-                cout << "\n\nPERFORMING A SINGLE-IMAGE TEST\n\n";   
+                cout << "\n\nPERFORMING A SINGLE-IMAGE TEST\n\n";
 
                 filename = "../images/digit_recognition/testB.jpg";
                 label = syANN_MLP_Test_Single(filename,annTRAINED);
@@ -358,7 +371,7 @@ void processImage(const std::string& imagePath) {
 void loadImagesAndLabelsForTrainAndTest(string &pathName, vector <Mat> &trainImages, vector <Mat> &testImages, vector <int> &trainLabels, vector <int> &testLabels)
 {
     Mat img = imread(pathName, cv::IMREAD_GRAYSCALE);
-    
+
     if (img.empty()) {
         cout << "\nERROR: IMAGEN NO CARGADA. VERIFICA LA RUTA DE ARCHIVO." << endl;
         cout << "PRESIONE CUALQUIER BOTON PARA CONTINUAR" << endl;
@@ -439,7 +452,7 @@ int syFeatureMatricesForTestAndTrain (vector <Mat> & trainImages, vector <Mat> &
         trainLabelsMat.at <uchar> (r, 0) = trainLabels [r];
 
     testLabelsMat = Mat::zeros (testLabels.size (), 1, CV_8UC1);
-    
+
     for (int r = 0; r < testLabelsMat.rows; r ++)
         testLabelsMat.at <uchar> (r, 0) = testLabels [r];
 
@@ -467,12 +480,12 @@ Mat deskew (Mat & img)
     float affineFlags = WARP_INVERSE_MAP|INTER_LINEAR;
 
     Moments m = moments (img);
-    
+
     if (abs (m.mu02) < 1e-2)
     {
         return img.clone ();
     }
-    
+
     float skew = m.mu11 / m.mu02;
     Mat warpMat = (Mat_ <float> (2, 3) << 1, skew, -0.5 * SZ * skew, 0, 1, 0);
     Mat imgOut = Mat::zeros (img.rows, img.cols, img.type ());
@@ -580,7 +593,7 @@ int syANN_MLP_TrainAndSave(Ptr<ml::ANN_MLP> &ann, Mat &train_data, Mat &trainLab
    // with an '1' in the corresponding correct-label column
 
     Mat train_classes = Mat::zeros (train_data.rows, nClasses, CV_32FC1);
-    
+
     for (int i = 0; i < train_classes.rows; i ++)
     {
         train_classes.at <float> (i, trainLabelsMat.at <uchar> (i)) = 1.0;
@@ -637,7 +650,7 @@ void ANN_train_test (int nclasses, const Mat & train_data, const Mat & trainLabe
     ann -> setTrainMethod (ml::ANN_MLP::BACKPROP, 0.0001);
 
     Mat train_classes = Mat::zeros (train_data.rows, nclasses, CV_32FC1);
-    
+
     for (int i = 0; i < train_classes.rows; i ++)
     {
         train_classes.at <float> (i, trainLabelsMat.at <uchar> (i)) = 1.0;
@@ -662,4 +675,103 @@ void ANN_train_test (int nclasses, const Mat & train_data, const Mat & trainLabe
     Mat correct = confusion.diag ();
     float accuracy = sum (correct) [0] / sum (confusion) [0];
     cout << "\nAccuracy: " << accuracy << "\n\n";
+}
+
+void extractTextureFeatures(const Mat &image, vector<float> &features) {
+    Mat imgGray;
+    cvtColor(image, imgGray, COLOR_BGR2GRAY);
+
+    // Calcula histogramas de gradientes X e Y
+    Mat gradX, gradY;
+    Sobel(imgGray, gradX, CV_32F, 1, 0, 3);  // Gradiente en X
+    Sobel(imgGray, gradY, CV_32F, 0, 1, 3);  // Gradiente en Y
+
+    Scalar meanX, stddevX, meanY, stddevY;
+
+    // Asegura que los gradientes no estén vacíos antes de calcular estadísticas
+    if (!gradX.empty()) {
+        meanStdDev(gradX, meanX, stddevX);
+    } else {
+        meanX = Scalar(0);
+        stddevX = Scalar(0);
+    }
+
+    if (!gradY.empty()) {
+        meanStdDev(gradY, meanY, stddevY);
+    } else {
+        meanY = Scalar(0);
+        stddevY = Scalar(0);
+    }
+
+    // Añade las medias y desviaciones de los gradientes como características
+    features.push_back(static_cast<float>(meanX[0]));
+    features.push_back(static_cast<float>(stddevX[0]));
+    features.push_back(static_cast<float>(meanY[0]));
+    features.push_back(static_cast<float>(stddevY[0]));
+
+    // Calcula momentos Hu como características de forma
+    Moments moments = cv::moments(imgGray, true);
+    double hu[7];
+    HuMoments(moments, hu);
+    for (int i = 0; i < 7; i++) {
+        features.push_back(static_cast<float>(hu[i]));
+    }
+}
+
+void saveToCSV(const string &filename, const vector<vector<float>> &data, const vector<string> &labels) {
+    ofstream file(filename);
+
+    // Escribe el encabezado del archivo CSV
+    file << "Label,MeanGradX,StdDevGradX,MeanGradY,StdDevGradY";
+    for (int i = 1; i <= 7; i++) file << ",HuMoment" << i;
+    file << "\n";
+
+    // Escribe los datos de las características
+    for (size_t i = 0; i < data.size(); i++) {
+        file << labels[i] << ",";
+        for (float f : data[i]) file << f << ",";
+        file << "\n";
+    }
+    file.close();
+}
+
+void processImagesAndSaveFeatures() {
+    string basePath = "./images/TRAINING";
+    vector<vector<float>> allFeatures;
+    vector<string> labels;
+
+    for (const auto &entry : fs::directory_iterator(basePath)) {
+        if (fs::is_directory(entry)) {
+            string fontName = entry.path().filename().string();  // Nombre de la fuente (subcarpeta)
+            vector<float> accumulatedFeatures(11, 0.0f);  // Vector para acumular características
+            int imgCount = 0;
+
+            for (const auto &imgFile : fs::directory_iterator(entry.path())) {
+                Mat img = imread(imgFile.path().string());
+                if (!img.empty()) {
+                    vector<float> features;
+                    extractTextureFeatures(img, features);
+
+                    // Acumula las características
+                    for (size_t i = 0; i < features.size(); i++) {
+                        accumulatedFeatures[i] += features[i];
+                    }
+                    imgCount++;
+                }
+            }
+
+            // Calcula el promedio de características por subcarpeta
+            for (float &value : accumulatedFeatures) {
+                value /= imgCount;
+            }
+
+            allFeatures.push_back(accumulatedFeatures);
+            labels.push_back(fontName);
+        }
+    }
+
+    // Guarda las características en un archivo CSV
+    saveToCSV("font_features.csv", allFeatures, labels);
+
+    cout << "Extraccion y guardado de caracteristicas completado." << endl;
 }
