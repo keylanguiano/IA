@@ -297,7 +297,7 @@ int syANN_MLP_Test_Single (string filename, Ptr <ml::ANN_MLP> & annTRAINED)
 Mat processImage(const string& imagePath) {
     Mat image = imread(imagePath, cv::IMREAD_COLOR);
     if (image.empty()) {
-        cerr << "ERROR: NO SE PUEDE ABRIR LA IMAGEN " << imagePath << endl;
+        cerr << "Error: No se puede abrir la imagen " << imagePath << endl;
         return Mat();
     }
 
@@ -657,7 +657,7 @@ void saveToCSV(const string& filename, const vector<vector<float>>& data, const 
     ofstream file(filename);
 
     if (!file.is_open()) {
-        cerr << "ERROR: NO SE PUEDE ABRIR EL ARCHIVO" << filename << endl;
+        cerr << "Error: No se puede abrir el archivo " << filename << endl;
         return;
     }
 
@@ -674,7 +674,7 @@ void saveToCSV(const string& filename, const vector<vector<float>>& data, const 
     }
 
     file.close();
-    cout << "DATOS GUARDADOS EN: " << filename << endl;
+    cout << "Datos guardados en " << filename << endl;
 }
 
 
@@ -689,7 +689,7 @@ void processImagesAndSaveFeatures() {
             vector<float> accumulatedFeatures;  // Vector para acumular características
 
             for (const auto& imgFile : fs::directory_iterator(entry.path())) {
-                cout << "PROCESANDO MUESTRA: " << imgFile.path().string() << endl;
+                cout << "Procesando imagen: " << imgFile.path().string() << endl;
                 Mat img = processImage(imgFile.path().string());
                 if (!img.empty()) {
                     vector<float> features;
@@ -706,6 +706,6 @@ void processImagesAndSaveFeatures() {
     // Guarda las características en un archivo CSV
     saveToCSV("font_features.csv", allFeatures, labels);
 
-    cout << "EXTRACCION Y GUARDADO DE CARACTERISTICAS COMPLETADO." << endl;
+    cout << "Extraccion y guardado de caracteristicas completado." << endl;
 }
 
