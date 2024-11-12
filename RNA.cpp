@@ -15,25 +15,29 @@ namespace fs = std::filesystem;
 // For feature extraction
 HOGDescriptor hog
 (
-    Size(64, 64), // winSize
-    Size(16, 16), // blockSize
-    Size(4, 4),   // blockStride
-    Size(8, 8),   // cellSize
-    9,            // nbins
-    1,            // derivAper
-    -1,           // winSigma
+    Size(640, 256), // winSize
+    Size(64, 64), // blockSize
+    Size(32, 32),   // blockStride
+    Size(64, 64),   // cellSize
+    9,              // nbins
+    1,              // derivAper
+    -1,             // winSigma
     cv::HOGDescriptor::HistogramNormType::L2Hys, // histogramNormType
-    0.2,          // L2HysThresh
-    0,            // gammaCorrection
-    64,           // nlevels
-    1             // signedGradient
+    0.2,            // L2HysThresh
+    0,              // gammaCorrection
+    64,             // nlevels
+    1               // signedGradient
 );
 
-// EXTRACCION DE CARACTERISTICAS Y GUARDADO EN .CVS
+// CASE 1: EXTRACCION DE CARACTERISTICAS Y GUARDADO EN .CVS
 void processImagesAndSaveFeatures();
-Mat processImage(const string& imagePath);
 void extractTextureFeatures(const Mat& image, vector<float>& features);
 void saveToCSV(const string& filename, const vector<vector<float>>& data, const vector<string>& labels);
+
+// CASE 2: CARGAR ARCHIVO FONT_FEATURES.CSV Y GUARDAR LOS DATOS EN LAS MATRICES
+void loadFeaturesFromCSV(const string& filename, Mat& fullFeatures);
+Mat shuffleData(Mat fullFeatures);
+void splitData(const Mat fullFeatures, int nFolds, Mat& trainMat, Mat& testMat, Mat& trainLabelsMat, Mat& testLabelsMat);
 
 // Preprocessing
 void CreateDeskewedTrainAndTestImageSets (vector <Mat> & deskewedTrainImages, vector <Mat> & deskewedTestImages, vector <Mat> & trainImages, vector <Mat> & testImages);
@@ -61,13 +65,10 @@ int main(void)
 {
     // CASE 1 VARIABLES:
     char overwrite;
-    string pathName = " ";
-    vector <Mat> trainImages;
-    vector <Mat> testImages;
-    vector <int> trainLabels;
-    vector <int> testLabels;
 
     // CASE 2 VARIABLES:
+	int nFolds = 10;
+	Mat fullFeatures;
     Mat trainMat, testMat, trainLabelsMat, testLabelsMat;
 
     // CASE 3 VARIABLES:
@@ -110,8 +111,8 @@ int main(void)
                 cout << "------------------------------------------------------" << endl;
      
                 // Revisar si existe en la carpeta raiz el archivo font_features.csv
-				if (fs::exists("font_features.csv")) {
-					cout << "EL ARCHIVO font_features.csv YA EXISTE EN LA CARPETA RAIZ." << endl;
+				if (fs::exists("FONT_FEATURES.csv")) {
+					cout << "EL ARCHIVO FONT_FEATURES.csv YA EXISTE EN LA CARPETA RAIZ." << endl;
 					cout << "¿DESEA SOBREESCRIBIRLO? (S/N): ";
 					cin >> overwrite;
 
@@ -128,24 +129,24 @@ int main(void)
 
             case '2':
                 cout << "------------------------------------------------------" << endl;
-				// Revisar si existe en la carpeta raiz el archivo font_features.csv, si no existe recomendar la opcion 1 para crearlo
 				
-                if (!fs::exists("font_features.csv")) {
-					cout << "EL ARCHIVO font_features.csv NO EXISTE EN LA CARPETA RAIZ." << endl;
+                // Revisar si existe en la carpeta raiz el archivo font_features.csv, si no existe recomendar la opcion 1 para 
+                if (!fs::exists("FONT_FEATURES.csv")) {
+					cout << "EL ARCHIVO FONT_FEATURES.csv NO EXISTE EN LA CARPETA RAIZ." << endl;
 					cout << "POR FAVOR EJECUTE LA OPCION 1 PARA CREARLO." << endl;
 					system("pause");
 					break;
-				}
-
-
-                /*syFeatureMatricesForTestAndTrain(trainImages, testImages, trainLabels, testLabels, trainMat, testMat, trainLabelsMat, testLabelsMat);
-
-                cout << "\nDESCRIPTOR SIZE : " << trainMat.cols << endl;
-                cout << "\nWARNING: ALL MATRIX SIZES ARE GIVEN IN A [ COLUMNS X ROWS ] FORMAT:\n" << endl;
-                cout << "TRAINING MAT SIZE: " << trainMat.size() << "\n";
-                cout << "TESTING  MAT SIZE: " << testMat.size() << "\n\n";
-                cout << "TRAIN LABELS MAT SIZE: " << trainLabelsMat.size() << "\n";
-                cout << "TEST LABELS MAT SIZE: " << testLabelsMat.size() << "\n\n";*/
+                }
+                else {
+					loadFeaturesFromCSV("FONT_FEATURES.csv", fullFeatures);
+					splitData(fullFeatures, nFolds, trainMat, testMat, trainLabelsMat, testLabelsMat);
+                    cout << "\nDESCRIPTOR SIZE : " << trainMat.cols << endl;
+                    cout << "\nWARNING: ALL MATRIX SIZES ARE GIVEN IN A [ COLUMNS X ROWS ] FORMAT:\n" << endl;
+                    cout << "TRAINING MAT SIZE: " << trainMat.size() << "\n";
+                    cout << "TESTING  MAT SIZE: " << testMat.size() << "\n\n";
+                    cout << "TRAIN LABELS MAT SIZE: " << trainLabelsMat.size() << "\n";
+                    cout << "TEST LABELS MAT SIZE: " << testLabelsMat.size() << "\n\n";
+                }
                 break;
 
             case '3':
@@ -293,97 +294,174 @@ int syANN_MLP_Test_Single (string filename, Ptr <ml::ANN_MLP> & annTRAINED)
     return annTRAINED -> predict (underTest, noArray ());
 }
 
-// LOAD SAMPLES
-Mat processImage(const string& imagePath) {
-    Mat image = imread(imagePath, cv::IMREAD_COLOR);
-    if (image.empty()) {
-        cerr << "ERROR: NO SE PUEDE ABRIR LA IMAGEN " << imagePath << endl;
-        return Mat();
-    }
-
-    // Convertir a escala de grises
+// EXTRACCION DE CARACTERISTICAS Y GUARDADO EN .CVS
+void extractTextureFeatures(const Mat& image, vector<float>& features) {
+    // Convertir la imagen a escala de grises
     Mat imgGray;
-    cvtColor(image, imgGray, cv::COLOR_BGR2GRAY);
+    cvtColor(image, imgGray, COLOR_BGR2GRAY);
 
-    // Invertir la imagen (pasar a negativo)
-    Mat imgNegative;
-    bitwise_not(imgGray, imgNegative);
-
-    // Encontrar contornos
-    vector<vector<Point>> contours;
-    findContours(imgNegative, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
-
-    // Encontrar el contorno más grande y crear un rectángulo alrededor de él
-    Rect boundingRect;
-    if (!contours.empty()) {
-        boundingRect = cv::boundingRect(contours[0]);
-        for (size_t i = 1; i < contours.size(); i++) {
-            boundingRect |= cv::boundingRect(contours[i]);
-        }
-    }
-
-    // Recortar la imagen al rectángulo encontrado
-    Mat croppedImage = imgNegative(boundingRect);
-
-    return croppedImage;
-}
-
-void loadImagesAndLabelsForTrainAndTest(string &pathName, vector <Mat> &trainImages, vector <Mat> &testImages, vector <int> &trainLabels, vector <int> &testLabels)
-{
-    Mat img = imread(pathName, IMREAD_GRAYSCALE);
-
-    if (img.empty()) {
-        cout << "\nERROR: IMAGEN NO CARGADA. VERIFICA LA RUTA DE ARCHIVO." << endl;
-        cout << "PRESIONE CUALQUIER BOTON PARA CONTINUAR" << endl;
-        cin.get();
-
+    // Verificar que la imagen tenga el tamaño esperado
+    if (imgGray.size() != Size(640, 256)) {
+        cout << "ERROR: LA IMAGEN NO TIENE EL TAMAÑO ESPERADO DE 640 x 256." << endl;
         return;
     }
-    else {
-        int ImgCount = 0;
-        for(int i = 0; i < img.rows; i = i + SZ)
-        {
-            for(int j = 0; j < img.cols; j = j + SZ)
-            {
-                Mat digitImg = (img.colRange(j, j + SZ).rowRange(i, i + SZ)).clone();
 
-                if (j < int(0.9 * img.cols))
-                {
-                    trainImages.push_back(digitImg);
+    // Calcular HOG para la imagen completa
+    vector<float> hogFeatures;
+    try {
+        hog.compute(imgGray, hogFeatures);
+    }
+    catch (const cv::Exception& e) {
+        cout << "ERROR: EXCEPCIÓN AL CALCULAR HOG: " << e.what() << endl;
+        return;
+    }
+
+    // Insertar las características HOG en el vector de características
+    features.insert(features.end(), hogFeatures.begin(), hogFeatures.end());
+}
+
+void processImagesAndSaveFeatures() {
+    string samplesPath = "./images/MUESTRAS"; // Ruta a la carpeta de muestras
+    vector<vector<float>> data;
+    vector<string> labels;
+
+    cout << endl;
+    for (const auto& entry : fs::directory_iterator(samplesPath)) {
+		cout << "PROCESANDO MUESTRA: " << entry.path().filename().string() << endl;
+        if (fs::is_directory(entry)) {
+            string label = entry.path().filename().string();
+            for (const auto& imgEntry : fs::directory_iterator(entry.path())) {
+                if (imgEntry.path().extension() == ".jpg" || imgEntry.path().extension() == ".png") {
+                    Mat image = imread(imgEntry.path().string());
+                    if (image.empty()) {
+                        cout << "ERROR: NO SE PUDO CARGAR LA IMAGEN: " << imgEntry.path() << endl;
+                        continue;
+                    }
+
+                    vector<float> features;
+                    extractTextureFeatures(image, features);
+                    data.push_back(features);
+                    labels.push_back(label);
                 }
-                else
-                {
-                    testImages.push_back(digitImg);
-                }
-                ImgCount++;
             }
-        }
-
-        cout << "\nIMAGE COUNT: " << ImgCount << endl;
-        float digitClassNumber = 0;
-
-        for (int z = 0; z <int(0.9 * ImgCount); z++)
-        {
-            if (z % 450 == 0 && z != 0)
-            {
-                digitClassNumber = digitClassNumber + 1;
-            }
-
-            trainLabels.push_back(digitClassNumber);
-        }
-
-        digitClassNumber = 0;
-
-        for (int z = 0; z <int(0.1 * ImgCount); z++)
-        {
-            if (z % 50 == 0 && z != 0)
-            {
-                digitClassNumber = digitClassNumber + 1;
-            }
-
-            testLabels.push_back(digitClassNumber);
         }
     }
+
+    saveToCSV("FONT_FEATURES.csv", data, labels);
+    cout << "\nCARACTERISTICAS GUARDADAS EN EL ARCHIVO: FONT_FEATURES.csv" << endl;
+}
+
+void saveToCSV(const string& filename, const vector<vector<float>>& data, const vector<string>& labels) {
+    ofstream file(filename);
+    if (!file.is_open()) {
+        cout << "ERROR: NO SE PUDO ABRIR EL ARCHIVO PARA ESCRIBIR: " << filename << endl;
+        return;
+    }
+
+    for (size_t i = 0; i < data.size(); ++i) {
+        for (const auto& feature : data[i]) {
+            file << feature << ",";
+        }
+        file << labels[i] << "\n";
+    }
+
+    file.close();
+}
+
+// CARGAR ARCHIVO FONT_FEATURES.CSV Y GUARDAR LOS DATOS EN LAS MATRICES
+void loadFeaturesFromCSV(const string& filename, Mat& fullFeatures) {
+	ifstream file(filename);
+	if (!file.is_open()) {
+		cout << "ERROR: NO SE PUDO ABRIR EL ARCHIVO PARA LEER: " << filename << endl;
+		return;
+	}
+
+	vector<vector<float>> data;
+	vector<string> labels;
+	string line;
+	while (getline(file, line)) {
+		stringstream ss(line);
+		string feature;
+		vector<float> features;
+		while (getline(ss, feature, ',')) {
+			if (feature.empty()) {
+				continue;
+			}
+
+			if (feature.find_first_not_of("0123456789.-") != string::npos) {
+				labels.push_back(feature);
+			}
+			else {
+				features.push_back(stof(feature));
+			}
+		}
+
+		data.push_back(features);
+	}
+
+	file.close();
+
+	// Convertir los datos a una matriz de características
+	fullFeatures = Mat(data.size(), data[0].size(), CV_32F);
+	for (size_t i = 0; i < data.size(); ++i) {
+		for (size_t j = 0; j < data[i].size(); ++j) {
+			fullFeatures.at<float>(i, j) = data[i][j];
+		}
+	}
+
+	cout << "\nCARACTERISTICAS CARGADAS CORRECTAMENTE DESDE EL ARCHIVO: " << filename << endl;
+}
+
+// MEZCLAR LA MATRIZ DE CARACTERISTICAS Y ETIQUETAS
+Mat shuffleData(Mat fullFeatures) {
+	Mat shuffledFeatures;
+	Mat shuffledLabels;
+	Mat indices = Mat::zeros(fullFeatures.rows, 1, CV_32S);
+	randu(indices, Scalar(0), Scalar(fullFeatures.rows));
+
+	for (int i = 0; i < fullFeatures.rows; ++i) {
+		int index = indices.at<int>(i);
+		Mat feature = fullFeatures.row(index);
+		shuffledFeatures.push_back(feature);
+	}
+
+	return shuffledFeatures;
+}
+
+// DIVIDIR LA MATRIZ DE CARACTERISTICAS Y ETIQUETAS EN trainMat, testMat, trainLabelsMat, testLabelsMat TENIENDO EN CUENTA nFolds
+void splitData(const Mat fullFeatures, int nFolds, Mat& trainMat, Mat& testMat, Mat& trainLabelsMat, Mat& testLabelsMat) {
+	// Verificar si las matrices trainMat, testMat, trainLabelsMat, testLabelsMat estan vacias, si tienen datos, liberar la memoria
+	if (!trainMat.empty()) {
+		trainMat.release();
+	}
+	if (!testMat.empty()) {
+		testMat.release();
+	}
+	if (!trainLabelsMat.empty()) {
+		trainLabelsMat.release();
+	}
+	if (!testLabelsMat.empty()) {
+		testLabelsMat.release();
+	}
+
+	// Mezclar los datos
+    Mat shuffled = shuffleData(fullFeatures);
+
+	// Calcular el número de muestras por pliegue
+    int nSamplesPerFold = shuffled.rows / nFolds;
+    int  nSamplesLearn = nSamplesPerFold * (nFolds - 1);
+    int nSamplesTest = shuffled.rows - nSamplesLearn;
+    cout << "\nFOR " << nFolds << "-FOLD TEST: " << nSamplesPerFold << " SAMPLES PER FOLD; " << nSamplesLearn << " FOR LEARNING, " << nSamplesTest << " FOR TESTING.\n";
+
+	// Dividir los datos en trainMat, testMat, trainLabelsMat, testLabelsMat
+    trainMat = shuffled(Range(0, nSamplesLearn), Range(0, shuffled.cols - 1));
+    testMat = shuffled(Range(nSamplesLearn, shuffled.rows), Range(0, shuffled.cols - 1));
+    trainLabelsMat = shuffled(Range(0, nSamplesLearn), Range(shuffled.cols - 1, shuffled.cols));
+    testLabelsMat = shuffled(Range(nSamplesLearn, shuffled.rows), Range(shuffled.cols - 1, shuffled.cols));
+
+	// Convertir las etiquetas a enteros
+    trainLabelsMat.convertTo(trainLabelsMat, CV_8UC1);
+    testLabelsMat.convertTo(testLabelsMat, CV_8UC1);
 }
 
 // CONSTRUCT FEATURE MATRICES
@@ -636,76 +714,3 @@ void ANN_train_test (int nclasses, const Mat & train_data, const Mat & trainLabe
     float accuracy = sum (correct) [0] / sum (confusion) [0];
     cout << "\nAccuracy: " << accuracy << "\n\n";
 }
-
-void extractTextureFeatures(const Mat& image, vector<float>& features) {
-    Size winSize = hog.winSize;
-    for (int y = 0; y < image.rows; y += winSize.height) {
-        for (int x = 0; x < image.cols; x += winSize.width) {
-            Rect blockRect(x, y, winSize.width, winSize.height);
-            if (x + winSize.width <= image.cols && y + winSize.height <= image.rows) {
-                Mat block = image(blockRect);
-                vector<float> hogFeatures;
-                vector<Point> locations;
-                hog.compute(block, hogFeatures, Size(8, 8), Size(0, 0), locations);
-                features.insert(features.end(), hogFeatures.begin(), hogFeatures.end());
-            }
-        }
-    }
-}
-
-void saveToCSV(const string& filename, const vector<vector<float>>& data, const vector<string>& labels) {
-    ofstream file(filename);
-
-    if (!file.is_open()) {
-        cerr << "ERROR: NO SE PUEDE ABRIR EL ARCHIVO" << filename << endl;
-        return;
-    }
-
-    // Escribir datos
-    for (size_t i = 0; i < data.size(); ++i) {
-        file << labels[i] << ",";
-        for (size_t j = 0; j < data[i].size(); ++j) {
-            file << data[i][j];
-            if (j < data[i].size() - 1) {
-                file << ",";
-            }
-        }
-        file << "\n";
-    }
-
-    file.close();
-    cout << "DATOS GUARDADOS EN: " << filename << endl;
-}
-
-
-void processImagesAndSaveFeatures() {
-    string basePath = "./images/TRAINING";
-    vector<vector<float>> allFeatures;
-    vector<string> labels;
-
-    for (const auto& entry : fs::directory_iterator(basePath)) {
-        if (fs::is_directory(entry)) {
-            string fontName = entry.path().filename().string();  // Nombre de la fuente (subcarpeta)
-            vector<float> accumulatedFeatures;  // Vector para acumular características
-
-            for (const auto& imgFile : fs::directory_iterator(entry.path())) {
-                cout << "PROCESANDO MUESTRA: " << imgFile.path().string() << endl;
-                Mat img = processImage(imgFile.path().string());
-                if (!img.empty()) {
-                    vector<float> features;
-                    extractTextureFeatures(img, features);
-                    accumulatedFeatures.insert(accumulatedFeatures.end(), features.begin(), features.end());
-                }
-            }
-
-            allFeatures.push_back(accumulatedFeatures);
-            labels.push_back(fontName);
-        }
-    }
-
-    // Guarda las características en un archivo CSV
-    saveToCSV("font_features.csv", allFeatures, labels);
-
-    cout << "EXTRACCION Y GUARDADO DE CARACTERISTICAS COMPLETADO." << endl;
-}
-
