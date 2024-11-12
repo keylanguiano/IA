@@ -35,18 +35,9 @@ void extractTextureFeatures(const Mat& image, vector<float>& features);
 void saveToCSV(const string& filename, const vector<vector<float>>& data, const vector<string>& labels);
 
 // CASE 2: CARGAR ARCHIVO FONT_FEATURES.CSV Y GUARDAR LOS DATOS EN LAS MATRICES
-void loadFeaturesFromCSV(const string& filename, Mat& fullFeatures);
+void loadFeaturesFromCSV(const string& filename, Mat& fullFeatures, vector<string>& originalLabels);
 Mat shuffleData(Mat fullFeatures);
 void splitData(const Mat fullFeatures, int nFolds, Mat& trainMat, Mat& testMat, Mat& trainLabelsMat, Mat& testLabelsMat);
-
-// Preprocessing
-void CreateDeskewedTrainAndTestImageSets (vector <Mat> & deskewedTrainImages, vector <Mat> & deskewedTestImages, vector <Mat> & trainImages, vector <Mat> & testImages);
-Mat deskew (Mat & img);
-void CreateTrainAndTestHOGs (vector <vector <float>> & trainHOG, vector <vector <float>> & testHOG, vector <Mat> & deskewedtrainImages, vector <Mat> & deskewedtestImages);
-
-// Feature matrices
-int syFeatureMatricesForTestAndTrain (vector <Mat> & trainImages, vector <Mat> & testImages, vector <int> & trainLabels, vector <int> & testLabels, Mat & trainMat, Mat & testMat, Mat & trainLabelsMat, Mat & testLabelsMat);
-void ConvertVectorToMatrix (vector <vector <float>> & trainHOG, vector <vector <float>> & testHOG, Mat & trainMat, Mat & testMat);
 
 // Multilayer perceptron
 void ANN_train_test (int nclasses, const Mat & train_data, const Mat & trainLabelsMat, const Mat & test_data, const Mat & testLabelsMat, Mat & confusion);
@@ -68,6 +59,7 @@ int main(void)
 
     // CASE 2 VARIABLES:
 	int nFolds = 10;
+    vector<string> originalLabels;
 	Mat fullFeatures;
     Mat trainMat, testMat, trainLabelsMat, testLabelsMat;
 
@@ -113,7 +105,7 @@ int main(void)
                 // Revisar si existe en la carpeta raiz el archivo font_features.csv
 				if (fs::exists("FONT_FEATURES.csv")) {
 					cout << "EL ARCHIVO FONT_FEATURES.csv YA EXISTE EN LA CARPETA RAIZ." << endl;
-					cout << "¿DESEA SOBREESCRIBIRLO? (S/N): ";
+					cout << "ï¿½DESEA SOBREESCRIBIRLO? (S/N): ";
 					cin >> overwrite;
 
 					if (overwrite == 'S' || overwrite == 's') {
@@ -138,21 +130,23 @@ int main(void)
 					break;
                 }
                 else {
-					loadFeaturesFromCSV("FONT_FEATURES.csv", fullFeatures);
+					loadFeaturesFromCSV("FONT_FEATURES.csv", fullFeatures, originalLabels);
 					splitData(fullFeatures, nFolds, trainMat, testMat, trainLabelsMat, testLabelsMat);
                     cout << "\nDESCRIPTOR SIZE : " << trainMat.cols << endl;
                     cout << "\nWARNING: ALL MATRIX SIZES ARE GIVEN IN A [ COLUMNS X ROWS ] FORMAT:\n" << endl;
                     cout << "TRAINING MAT SIZE: " << trainMat.size() << "\n";
                     cout << "TESTING  MAT SIZE: " << testMat.size() << "\n\n";
                     cout << "TRAIN LABELS MAT SIZE: " << trainLabelsMat.size() << "\n";
-                    cout << "TEST LABELS MAT SIZE: " << testLabelsMat.size() << "\n\n";
+                    cout << "TEST LABELS MAT SIZE: " << testLabelsMat.size() << "\n";
+					cout << "NUMBER OF CLASSES: " << originalLabels.size() << "\n\n";
+					system("pause");
                 }
                 break;
 
             case '3':
                 cout << "------------------------------------------------------" << endl;
                 nFeatures = trainMat.cols;
-                nClasses = 10;
+                nClasses = originalLabels.size();
                 cout << "\n\nTHE NUMBER OF DIFFERENT CLASSES IS " << nClasses << "\n\n";
 
                 syANN_MLP_CreateBasic(ann,nFeatures,nClasses);
@@ -277,7 +271,7 @@ int syANN_MLP_Test_Single (string filename, Ptr <ml::ANN_MLP> & annTRAINED)
 
     // Preprocessing
     resize (imgTest, imgTest, Size (20, 20), INTER_LINEAR);
-    Mat preprocTest = deskew (imgTest);
+    Mat preprocTest;
 
     // Feature extraction
     vector <float> featureVector;
@@ -300,9 +294,9 @@ void extractTextureFeatures(const Mat& image, vector<float>& features) {
     Mat imgGray;
     cvtColor(image, imgGray, COLOR_BGR2GRAY);
 
-    // Verificar que la imagen tenga el tamaño esperado
+    // Verificar que la imagen tenga el tamaï¿½o esperado
     if (imgGray.size() != Size(640, 256)) {
-        cout << "ERROR: LA IMAGEN NO TIENE EL TAMAÑO ESPERADO DE 640 x 256." << endl;
+        cout << "ERROR: LA IMAGEN NO TIENE EL TAMAï¿½O ESPERADO DE 640 x 256." << endl;
         return;
     }
 
@@ -312,11 +306,11 @@ void extractTextureFeatures(const Mat& image, vector<float>& features) {
         hog.compute(imgGray, hogFeatures);
     }
     catch (const cv::Exception& e) {
-        cout << "ERROR: EXCEPCIÓN AL CALCULAR HOG: " << e.what() << endl;
+        cout << "ERROR: EXCEPCIï¿½N AL CALCULAR HOG: " << e.what() << endl;
         return;
     }
 
-    // Insertar las características HOG en el vector de características
+    // Insertar las caracterï¿½sticas HOG en el vector de caracterï¿½sticas
     features.insert(features.end(), hogFeatures.begin(), hogFeatures.end());
 }
 
@@ -369,47 +363,52 @@ void saveToCSV(const string& filename, const vector<vector<float>>& data, const 
 }
 
 // CARGAR ARCHIVO FONT_FEATURES.CSV Y GUARDAR LOS DATOS EN LAS MATRICES
-void loadFeaturesFromCSV(const string& filename, Mat& fullFeatures) {
-	ifstream file(filename);
-	if (!file.is_open()) {
-		cout << "ERROR: NO SE PUDO ABRIR EL ARCHIVO PARA LEER: " << filename << endl;
-		return;
-	}
+void loadFeaturesFromCSV(const string& filename, Mat& fullFeatures, vector<string>& originalLabels) {
+    ifstream file(filename);
+    if (!file.is_open()) {
+        cout << "ERROR: NO SE PUDO ABRIR EL ARCHIVO PARA LEER: " << filename << endl;
+        return;
+    }
 
-	vector<vector<float>> data;
-	vector<string> labels;
-	string line;
-	while (getline(file, line)) {
-		stringstream ss(line);
-		string feature;
-		vector<float> features;
-		while (getline(ss, feature, ',')) {
-			if (feature.empty()) {
-				continue;
-			}
+    vector<vector<float>> data;
+    vector<string> labels;
+    string line;
+    while (getline(file, line)) {
+        stringstream ss(line);
+        string feature;
+        vector<float> features;
+        while (getline(ss, feature, ',')) {
+            if (feature.empty()) {
+                continue;
+            }
 
-			if (feature.find_first_not_of("0123456789.-") != string::npos) {
-				labels.push_back(feature);
-			}
-			else {
-				features.push_back(stof(feature));
-			}
-		}
+            if (feature.find_first_not_of("0123456789.-") != string::npos) {
+                auto it = find(originalLabels.begin(), originalLabels.end(), feature);
+                if (it == originalLabels.end()) {
+                    originalLabels.push_back(feature);
+                    features.push_back(originalLabels.size() - 1);
+                } else {
+                    features.push_back(distance(originalLabels.begin(), it));
+                }
+            } else {
+                features.push_back(stof(feature));
+            }
+        }
 
-		data.push_back(features);
-	}
+        data.push_back(features);
+    }
 
-	file.close();
+    file.close();
 
-	// Convertir los datos a una matriz de características
-	fullFeatures = Mat(data.size(), data[0].size(), CV_32F);
-	for (size_t i = 0; i < data.size(); ++i) {
-		for (size_t j = 0; j < data[i].size(); ++j) {
-			fullFeatures.at<float>(i, j) = data[i][j];
-		}
-	}
+    // Convertir los datos a una matriz de caracterï¿½sticas
+    fullFeatures = Mat(data.size(), data[0].size(), CV_32F);
+    for (size_t i = 0; i < data.size(); ++i) {
+        for (size_t j = 0; j < data[i].size(); ++j) {
+            fullFeatures.at<float>(i, j) = data[i][j];
+        }
+    }
 
-	cout << "\nCARACTERISTICAS CARGADAS CORRECTAMENTE DESDE EL ARCHIVO: " << filename << endl;
+    cout << "\nCARACTERISTICAS CARGADAS CORRECTAMENTE DESDE EL ARCHIVO: " << filename << endl;
 }
 
 // MEZCLAR LA MATRIZ DE CARACTERISTICAS Y ETIQUETAS
@@ -447,7 +446,7 @@ void splitData(const Mat fullFeatures, int nFolds, Mat& trainMat, Mat& testMat, 
 	// Mezclar los datos
     Mat shuffled = shuffleData(fullFeatures);
 
-	// Calcular el número de muestras por pliegue
+	// Calcular el nï¿½mero de muestras por pliegue
     int nSamplesPerFold = shuffled.rows / nFolds;
     int  nSamplesLearn = nSamplesPerFold * (nFolds - 1);
     int nSamplesTest = shuffled.rows - nSamplesLearn;
@@ -462,113 +461,6 @@ void splitData(const Mat fullFeatures, int nFolds, Mat& trainMat, Mat& testMat, 
 	// Convertir las etiquetas a enteros
     trainLabelsMat.convertTo(trainLabelsMat, CV_8UC1);
     testLabelsMat.convertTo(testLabelsMat, CV_8UC1);
-}
-
-// CONSTRUCT FEATURE MATRICES
-int syFeatureMatricesForTestAndTrain (vector <Mat> & trainImages, vector <Mat> & testImages, vector <int> & trainLabels, vector <int> & testLabels, Mat & trainMat, Mat & testMat, Mat & trainLabelsMat, Mat & testLabelsMat)
-{
-    // Pre-process the subimages
-    vector <Mat> deskewedTrainImages;
-    vector <Mat> deskewedTestImages;
-    CreateDeskewedTrainAndTestImageSets (deskewedTrainImages, deskewedTestImages, trainImages, testImages);
-
-    // Extract feature vectors
-    std::vector <std::vector <float>> trainHOG;
-    std::vector <std::vector <float>> testHOG;
-    CreateTrainAndTestHOGs (trainHOG, testHOG, deskewedTrainImages, deskewedTestImages);
-
-    int descriptor_size = trainHOG [0].size ();
-
-    // Shaping the feature vectors into feature matrices
-    trainMat = Mat::zeros (trainHOG.size (),descriptor_size, CV_32FC1);
-    testMat = Mat::zeros (testHOG.size (),descriptor_size, CV_32FC1);
-
-    ConvertVectorToMatrix (trainHOG, testHOG, trainMat, testMat);
-    trainLabelsMat = Mat::zeros (trainLabels.size (), 1, CV_8UC1);
-
-    for (int r = 0; r < trainLabelsMat.rows; r ++)
-        trainLabelsMat.at <uchar> (r, 0) = trainLabels [r];
-
-    testLabelsMat = Mat::zeros (testLabels.size (), 1, CV_8UC1);
-
-    for (int r = 0; r < testLabelsMat.rows; r ++)
-        testLabelsMat.at <uchar> (r, 0) = testLabels [r];
-
-    return true;
-}
-
-// Image pre-processing
-void CreateDeskewedTrainAndTestImageSets (vector <Mat> & deskewedTrainImages, vector <Mat> & deskewedTestImages, vector <Mat> & trainImages, vector <Mat> & testImages)
-{
-    for (int i = 0; i < trainImages.size (); i ++)
-    {
-        Mat deskewedImg = deskew (trainImages [i]);
-        deskewedTrainImages.push_back (deskewedImg);
-    }
-
-    for (int i = 0; i < testImages.size (); i ++)
-    {
-        Mat deskewedImg = deskew (testImages [i]);
-        deskewedTestImages.push_back (deskewedImg);
-    }
-}
-
-Mat deskew (Mat & img)
-{
-    float affineFlags = WARP_INVERSE_MAP|INTER_LINEAR;
-
-    Moments m = moments (img);
-
-    if (abs (m.mu02) < 1e-2)
-    {
-        return img.clone ();
-    }
-
-    float skew = m.mu11 / m.mu02;
-    Mat warpMat = (Mat_ <float> (2, 3) << 1, skew, -0.5 * SZ * skew, 0, 1, 0);
-    Mat imgOut = Mat::zeros (img.rows, img.cols, img.type ());
-    warpAffine (img, imgOut, warpMat, imgOut.size (),affineFlags);
-
-    return imgOut;
-}
-
-// Feature extraction
-void CreateTrainAndTestHOGs (vector <vector <float>> & trainHOG, vector <vector <float>> & testHOG, vector <Mat> & deskewedtrainImages, vector <Mat> & deskewedtestImages)
-{
-    for (int y = 0; y < deskewedtrainImages.size (); y++)
-    {
-        vector <float> descriptors;
-        hog.compute (deskewedtrainImages [y],descriptors);
-        trainHOG.push_back (descriptors);
-    }
-
-    for (int y = 0; y < deskewedtestImages.size (); y ++)
-    {
-        vector <float> descriptors;
-        hog.compute (deskewedtestImages [y], descriptors);
-        testHOG.push_back (descriptors);
-    }
-}
-
-void ConvertVectorToMatrix (vector <vector <float>> & trainHOG, vector <vector <float>> & testHOG, Mat & trainMat, Mat & testMat)
-{
-    int descriptor_size = trainHOG [0].size ();
-
-    for (int i = 0; i < trainHOG.size (); i ++)
-    {
-        for (int j = 0; j < descriptor_size; j ++)
-        {
-            trainMat.at <float> (i, j) = trainHOG [i][j];
-        }
-    }
-
-    for (int i = 0; i < testHOG.size (); i ++)
-    {
-        for (int j = 0; j < descriptor_size; j ++)
-        {
-                testMat.at <float> (i, j) = testHOG [i][j];
-        }
-    }
 }
 
 // TRAINING THE CLASSIFIER
