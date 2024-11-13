@@ -42,7 +42,6 @@ Mat shuffleData(Mat fullFeatures);
 void splitData(const Mat fullFeatures, int nFolds, Mat& trainMat, Mat& testMat, Mat& trainLabelsMat, Mat& testLabelsMat);
 
 // CASE 3: ENTRENAR LA ANN MLP CON LAS MATRICES CARGADAS EN EL SISTEMA Y GUARDAR EL MODELO
-void ANN_train_test(int nclasses, const Mat & train_data, const Mat & trainLabelsMat, const Mat & test_data, const Mat & testLabelsMat, Mat & confusion);
 Ptr <ml::ANN_MLP> ANN_MLP_CreateBasic (int nFeatures, int nClasses);
 int ANN_MLP_CreateBasic(Ptr <ml::ANN_MLP> & ann,int nFeatures, int nClasses);
 int ANN_MLP_Train(Ptr <ml::ANN_MLP> & ann, Mat & train_data, Mat & trainLabelsMat, int nClasses);
@@ -50,6 +49,8 @@ int ANN_MLP_TrainAndSave( Ptr <ml::ANN_MLP> & ann, Mat & train_data, Mat & train
 
 // CASE 5: PROBAR EL MODELO CON LA MATRIZ DE ENTRENAMIENTO Y GENERAR UNA MATRIZ DE CONFUSION
 int ANN_MLP_Test(Ptr <ml::ANN_MLP> & ann, Mat & testMat, Mat & testLabelsMat, int nClasses);
+
+// CASE 6: PROBAR EL MODELO CON UNA IMAGEN
 int ANN_MLP_Test_Single(string filename, Ptr <ml::ANN_MLP> & annTRAINED);
 
 // Global variable
@@ -94,7 +95,7 @@ int main(void)
         cout << "\t 1. EXTRAER LAS CARACTERISTICAS Y GUARDAR EN UN ARCHIVO .CVS" << endl;
         cout << "\t 2. CARGAR EL ARCHIVO .CVS PARA SEPARAR LAS MATRICES DE ENTRENAMIENTO Y PRUEBA" << endl;
         cout << "\t 3. ENTRENAR LA ANN MLP CON LAS MATRICES CARGADAS EN EL SISTEMA Y GUARDAR EL MODELO" << endl;
-        cout << "\t 4. CARGAR MODELO ENTRENADO" << endl;
+        cout << "\t 4. CARGAR UN MODELO ENTRENADO" << endl;
         cout << "\t 5. PROBAR EL MODELO CON LA MATRIZ DE ENTRENAMIENTO Y GENERAR UNA MATRIZ DE CONFUSION" << endl;
         cout << "\t 6. PROBAR EL MODELO CON UNA IMAGEN" << endl;
         cout << "\nINGRESE CUALQUIER TECLA PARA SALIR" << endl;
@@ -235,7 +236,9 @@ int main(void)
 					break;
 				}
 
+                nClasses = static_cast<int>(originalLabels.size());
                 ANN_MLP_Test(annTRAINED, testMat, testLabelsMat, nClasses);
+                system("pause");
                 break;
 
             case '6':
@@ -255,79 +258,9 @@ int main(void)
                 break;
 
             default:
-                return 0;
+                break;
         }
     } while (1);
-
-   //// PART A: LOAD THE SAMPLES
-   //// The goal is split the mosaic and conform the vectors trainImages, testImages, trainLabels, testLabels
-
-   // string pathName = "../images/digit_recognition/digits.png";
-   // vector <Mat> trainImages;
-   // vector <Mat> testImages;
-   // vector <int> trainLabels;
-   // vector <int> testLabels;
-   // loadImagesAndLabelsForTrainAndTest (pathName, trainImages, testImages, trainLabels, testLabels);
-
-   // cout << "Train labels in an int array of size: " << trainLabels.size () << "\n";
-   // cout << "Test labels in an int array of size: " << testLabels.size () << "\n\n";
-
-   //// PART B: FEATURE EXTRACTION
-   //// The goal is to conform four matrices     [ columns   x    rows       ]:
-   //// trainMat:       float-type image of size [ nFeatures x nTrainSamples ]
-   //// testMat:        float-type image of size [ nFeatures x nTestSamples  ]
-   //// trainLabelsMat: uchar-type image of size [     1     x nTrainSamples ]
-   //// testLabelsMat:  uchar-type image of size [     1     x nTestSamples  ]
-
-   // Mat trainMat, testMat, trainLabelsMat, testLabelsMat;
-   // FeatureMatricesForTestAndTrain (trainImages, testImages, trainLabels, testLabels, trainMat, testMat, trainLabelsMat, testLabelsMat);
-
-   // cout << "Descriptor Size : " << trainMat.cols << endl;
-   // cout << "\n\nWARNING: All matrix sizes are given in a [ columns x rows ] format:\n\n";
-   // cout << "Training Mat size: " << trainMat.size () << "\n";
-   // cout << "Testing  Mat size: " << testMat.size () << "\n\n";
-   // cout << "Train labels Mat size: " << trainLabelsMat.size () << "\n";
-   // cout << "Test labels Mat size: " << testLabelsMat.size () << "\n\n\n";
-
-   //// PART C: TRAINING A CLASSSIFIER
-   //// The goal is to create/train/save an ANN specifically a Multilayer Perceptron
-
-   // // ANN creation
-   // int nFeatures = trainMat.cols;
-   // int nClasses = 10;
-   // cout << "\n\nThe number of different classes is " << nClasses << "\n\n";
-
-   // Ptr <ml::ANN_MLP> ann;
-   // ANN_MLP_CreateBasic (ann,nFeatures,nClasses);
-
-   // // ANN training (the model is saved)
-
-   // // Filename for saving/loading trained models
-   // char *filename_ANNmodel = "ANNdigitsClassifierModel.yml";
-   // // Train and save the model
-   // ANN_MLP_TrainAndSave(ann,trainMat,trainLabelsMat,nClasses,filename_ANNmodel);
-
-   // // PART D: THE TEST (USING A PRE-TRAINED MODEL)
-   // cout << "\n\nLoading a trained model from file.\n\n";
-   // // Now, we can load the saved model
-   // Ptr <ANN_MLP> annTRAINED = cv::ml::ANN_MLP::load (filename_ANNmodel);
-   // // and perform the test
-   // ANN_MLP_Test (annTRAINED, testMat, testLabelsMat, nClasses);
-
-   // // PART E: SINGLE-IMAGE TEST
-   // // classifying the featues of an image under test
-   // cout << "\n\nPerforming a single-image test\n\n";
-
-   // string filename = "../images/digit_recognition/testB.jpg";
-   // int label = ANN_MLP_Test_Single(filename,annTRAINED);
-   // cout << "\nPredicted class for \"" << filename << "\" is: " << label << endl;
-
-   // string file2 = "../images/digit_recognition/testD.jpg";
-   // cout << "\nPredicted class for \"" << file2 << "\" is: " << ANN_MLP_Test_Single (file2, annTRAINED) << endl;
-
-   // string file3 =  "../images/digit_recognition/download.png";
-   // Mat testImage = imread (file3, IMREAD_GRAYSCALE);
-   // cout << "\nPredicted class for \"" << file3 << "\" is: " << ANN_MLP_Test_Single (file3, annTRAINED) << endl;
 
     return 0;
 }
@@ -608,98 +541,31 @@ int ANN_MLP_TrainAndSave(Ptr<ml::ANN_MLP> &ann, Mat &train_data, Mat &trainLabel
 }
 
 // CASE 5
-//int ANN_MLP_Test(Ptr<ml::ANN_MLP>& ann, Mat& testMat, Mat& testLabelsMat, int nClasses)
-//{
-//    cout << "ANN PREDICTION TEST\n\n";
-//
-//    Mat confusion(nClasses, nClasses, CV_32S, Scalar(0));
-//
-//    // Test samples in testMat Mat
-//    for (int i = 0; i < testMat.rows; i++)
-//    {
-//        int pred = ann->predict(testMat.row(i), noArray());
-//        int truth = testLabelsMat.at<uchar>(i);
-//        confusion.at<int>(truth, pred)++;
-//    }
-//    cout << "Confusion matrix:\n" << confusion << endl;
-//
-//    Mat correct = confusion.diag();
-//    float accuracy = sum(correct)[0] / sum(confusion)[0];
-//    cout << "\nAccuracy: " << accuracy << "\n\n";
-//    return 0;
-//}
-//
-
 // CREA UNA FUNCION PARA PROBAR EL MODELO CON LA MATRIZ DE PRUEBA Y GENERAR UNA MATRIZ DE CONFUSION
-int ANN_MLP_Test(Ptr<ml::ANN_MLP>& ann, Mat& testMat, Mat& testLabelsMat, int nClasses) {
-    Mat predictedLabels;
-    ann->predict(testMat, predictedLabels);
-
-    Mat confusionMat = Mat::zeros(nClasses, nClasses, CV_32S);
-
-    for (int i = 0; i < testMat.rows; ++i) {
-        int actualLabel = testLabelsMat.at<int>(i, 0);
-        int predictedLabel = predictedLabels.at<float>(i, 0);
-        confusionMat.at<int>(actualLabel, predictedLabel)++;
-    }
-
-    cout << "Confusion Matrix: " << endl;
-    for (int i = 0; i < nClasses; ++i) {
-        for (int j = 0; j < nClasses; ++j) {
-            cout << confusionMat.at<int>(i, j) << " ";
-        }
-        cout << endl;
-    }
-
-    return 0;
-}
-
-void ANN_train_test (int nclasses, const Mat & train_data, const Mat & trainLabelsMat, const Mat & test_data, const Mat & testLabelsMat, Mat & confusion)
+int ANN_MLP_Test(Ptr <ml::ANN_MLP>& ann, Mat& test_data, Mat& testLabelsMat, int nClasses)
 {
-    int nfeatures = train_data.cols;
-
-    // ANN init
-    cout << "\nInitializing ANN\n\n";
-
-    Ptr<ml::ANN_MLP> ann = ml::ANN_MLP::create ();
-    Mat_ <int> layers (3, 1);
-    layers (0) = nfeatures;
-    layers (1) = nfeatures * 2 + 1;
-    layers (2) = nclasses;
-    ann -> setLayerSizes (layers);
-    ann -> setActivationFunction (ml::ANN_MLP::SIGMOID_SYM, 0, 0);
-    ann -> setTermCriteria (TermCriteria (TermCriteria::MAX_ITER + TermCriteria::EPS, 300, 0.0001));
-    ann -> setTrainMethod (ml::ANN_MLP::BACKPROP, 0.0001);
-
-    Mat train_classes = Mat::zeros (train_data.rows, nclasses, CV_32FC1);
-
-    for (int i = 0; i < train_classes.rows; i ++)
-    {
-        train_classes.at <float> (i, trainLabelsMat.at <uchar> (i)) = 1.0;
-    }
-
-    cout << "\nTrain data size: " << train_data.size () << "\nTrain classes size: " << train_classes.size () << "\n\n";
-    cout << "Training the ANN...\n\n\n";
-    ann -> train (train_data, ml::ROW_SAMPLE, train_classes);
-
     cout << "ANN prediction test\n\n";
 
+    Mat confusion(nClasses, nClasses, CV_32S, Scalar(0));
+    cout << "Confusion matrix size: " << confusion.size() << "\n\n";
+
     // Tests samples in test_data Mat
-    for (int i = 0; i < test_data.rows; i ++)
+    for (int i = 0; i < test_data.rows; i++)
     {
-        int pred  = ann -> predict (test_data.row (i), noArray ());
-        int truth = testLabelsMat.at <uchar> (i);
-        confusion.at <int> (truth,pred) ++;
+        int pred = ann->predict(test_data.row(i), noArray());
+        int truth = testLabelsMat.at <uchar>(i);
+        confusion.at <int>(truth, pred)++;
     }
 
     cout << "Confusion matrix:\n" << confusion << endl;
 
-    Mat correct = confusion.diag ();
-    float accuracy = sum (correct) [0] / sum (confusion) [0];
+    Mat correct = confusion.diag();
+    float accuracy = sum(correct)[0] / sum(confusion)[0];
     cout << "\nAccuracy: " << accuracy << "\n\n";
+    return 0;
 }
 
-
+// CASE 6: PROBAR EL MODELO CON UNA IMAGEN
 int ANN_MLP_Test_Single(string filename, Ptr <ml::ANN_MLP>& annTRAINED)
 {
     Mat imgTest = imread(filename, cv::IMREAD_GRAYSCALE);
