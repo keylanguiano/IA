@@ -51,7 +51,7 @@ int ANN_MLP_TrainAndSave( Ptr <ml::ANN_MLP> & ann, Mat & train_data, Mat & train
 int ANN_MLP_Test(Ptr <ml::ANN_MLP> & ann, Mat & testMat, Mat & testLabelsMat, int nClasses);
 
 // CASE 6: PROBAR EL MODELO CON UNA IMAGEN
-int ANN_MLP_Test_Single(string filename, Ptr <ml::ANN_MLP> & annTRAINED);
+int ANN_MLP_Test_Single(Ptr<ml::ANN_MLP>& annTRAINED, const string& imagePath);
 
 // Global variable
 // Corresponds to the size of sub-images
@@ -59,11 +59,8 @@ int SZ = 20;
 
 int main(void)
 {
-    // CASE 1 VARIABLES:
-    char overwrite;
-
     // CASE 2 VARIABLES:
-	int nFolds = 5;
+	int nFolds = 10;
     vector<string> originalLabels;
 	Mat fullFeatures;
     Mat trainMat, testMat, trainLabelsMat, testLabelsMat;
@@ -74,16 +71,16 @@ int main(void)
     Ptr <ml::ANN_MLP> ann;
     char* filename_ANNmodel{};
 
-    // CASE 4 VARIABLES:
+    // CASE 3 VARIABLES:
     Ptr<ANN_MLP> annTRAINED;
 
-    // CASE 5 VARIABLES:
-    string filename = " ";
-    int label = 0;
-    string file2 = " ";
-    string file3 = " ";
-    Mat testImage;
+    // CASE 6 VARIABLES:
+    string routePath = "./Images/TESTING/";
+    string filename;
+	string route;
+    int pred;
 
+    char overwrite;
     char opcion = ' ';
 
     do
@@ -106,7 +103,7 @@ int main(void)
         switch (opcion) {
             case '1':
                 cout << "------------------------------------------------------" << endl;
-     
+                
                 // Revisar si existe en la carpeta raiz el archivo font_features.csv
 				if (fs::exists("FONT_FEATURES.csv")) {
 					cout << "EL ARCHIVO FONT_FEATURES.csv YA EXISTE EN LA CARPETA RAIZ." << endl;
@@ -243,18 +240,22 @@ int main(void)
 
             case '6':
                 cout << "------------------------------------------------------" << endl;
-                cout << "\n\nPERFORMING A SINGLE-IMAGE TEST\n\n";
 
-                filename = "../images/digit_recognition/testB.jpg";
-                label = ANN_MLP_Test_Single(filename,annTRAINED);
-                cout << "\nPREDICTED CLASS FOR \"" << filename << "\" IS: " << label << endl;
+				if (annTRAINED.empty()) {
+					cout << "ERROR: NO SE HA CARGADO UN MODELO ENTRENADO." << endl;
+					cout << "POR FAVOR EJECUTE LA OPCION 4 PARA CARGARLO." << endl;
+					cout << "O EJECUTE LA OPCION 3 PARA ENTRENAR UN NUEVO MODELO." << endl << endl;
+					system("pause");
+					break;
+				}
 
-                file2 = "../images/digit_recognition/testD.jpg";
-                cout << "\nPREDICTED CLASS FOR \"" << file2 << "\" IS: " << ANN_MLP_Test_Single(file2, annTRAINED) << endl;
-
-                file3 =  "../images/digit_recognition/download.png";
-                testImage = imread(file3, IMREAD_GRAYSCALE);
-                cout << "\nPREDICTED CLASS FOR \"" << file3 << "\" IS: " << ANN_MLP_Test_Single(file3, annTRAINED) << endl;
+				cout << "LA MUESTRA SE DEBE DE ENCONTRAR EN LA RUTA ./Images/TESTING/" << endl;
+				cout << "INGRESE EL NOMBRE DEL ARCHIVO: ";
+				cin >> filename;
+				route = routePath + filename;
+                pred = ANN_MLP_Test_Single(annTRAINED, route);
+				cout << "\nPREDICCION: " << originalLabels[pred] << "\n\n";
+				system("pause");
                 break;
 
             default:
@@ -344,7 +345,6 @@ bool saveToCSV(const string& filename, const vector<vector<float>>& data, const 
     file.close();
     return true;
 }
-
 
 // CASE 2
 // CARGAR ARCHIVO FONT_FEATURES.CSV Y GUARDAR LOS DATOS EN LAS MATRICES
@@ -544,10 +544,10 @@ int ANN_MLP_TrainAndSave(Ptr<ml::ANN_MLP> &ann, Mat &train_data, Mat &trainLabel
 // CREA UNA FUNCION PARA PROBAR EL MODELO CON LA MATRIZ DE PRUEBA Y GENERAR UNA MATRIZ DE CONFUSION
 int ANN_MLP_Test(Ptr <ml::ANN_MLP>& ann, Mat& test_data, Mat& testLabelsMat, int nClasses)
 {
-    cout << "ANN prediction test\n\n";
+    cout << "ANN PREDICTION TEST\n\n";
 
     Mat confusion(nClasses, nClasses, CV_32S, Scalar(0));
-    cout << "Confusion matrix size: " << confusion.size() << "\n\n";
+    cout << "CONFUSION MATRIX SIZE: " << confusion.size() << "\n\n";
 
     // Tests samples in test_data Mat
     for (int i = 0; i < test_data.rows; i++)
@@ -557,34 +557,56 @@ int ANN_MLP_Test(Ptr <ml::ANN_MLP>& ann, Mat& test_data, Mat& testLabelsMat, int
         confusion.at <int>(truth, pred)++;
     }
 
-    cout << "Confusion matrix:\n" << confusion << endl;
+    cout << "CONFUSION MATRIX:\n" << confusion << endl;
 
     Mat correct = confusion.diag();
     float accuracy = sum(correct)[0] / sum(confusion)[0];
-    cout << "\nAccuracy: " << accuracy << "\n\n";
+    cout << "\nACCURACY: " << accuracy << "\n\n";
     return 0;
 }
 
 // CASE 6: PROBAR EL MODELO CON UNA IMAGEN
-int ANN_MLP_Test_Single(string filename, Ptr <ml::ANN_MLP>& annTRAINED)
+int ANN_MLP_Test_Single(Ptr<ml::ANN_MLP>& annTRAINED, const string& imagePath)
 {
-    Mat imgTest = imread(filename, cv::IMREAD_GRAYSCALE);
+    // Cargar la imagen de muestra
+    Mat sample = imread(imagePath);
+    if (sample.empty())
+    {
+        cerr << "ERROR: NO SE PUDO CARGAR LA IMAGEN DESDE LA RUTA PROPORCIONADA." << endl;
+        return -1;
+    }
 
-    // Preprocessing
-    resize(imgTest, imgTest, Size(20, 20), INTER_LINEAR);
-    Mat preprocTest;
+    // Preprocesamiento de la muestra
+    Mat preprocSample;
+    cvtColor(sample, preprocSample, COLOR_BGR2GRAY); // Convertir a escala de grises
 
-    // Feature extraction
-    vector <float> featureVector;
-    hog.compute(preprocTest, featureVector);
+    // Invertir colores si es necesario (fondo negro y letras blancas)
+    double minVal, maxVal;
+    minMaxLoc(preprocSample, &minVal, &maxVal);
+    if (maxVal == 0) {
+        cerr << "ERROR: LA IMAGEN ESTÁ COMPLETAMENTE NEGRA." << endl;
+        return -1;
+    }
+    if (minVal == 0 && maxVal == 255) {
+        // La imagen ya tiene fondo negro y letras blancas
+    }
+    else {
+        // Invertir colores
+        bitwise_not(preprocSample, preprocSample);
+    }
+
+    preprocSample.convertTo(preprocSample, CV_8U, 1.0 / 255.0); // Normalizar
+
+    vector<float> featureVector;
+    hog.compute(preprocSample, featureVector);
     int numFeatures = featureVector.size();
 
-    // Vector to matrix
+    // Vector a matriz
     Mat underTest = Mat::zeros(1, numFeatures, CV_32FC1);
-
     for (int k = 0; k < numFeatures; k++)
-        underTest.at <float>(0, k) = featureVector[k];
+        underTest.at<float>(0, k) = featureVector[k];
 
-    // Prediction
-    return annTRAINED->predict(underTest, noArray());
+    // Predicción
+    int predictedClass = static_cast<int>(annTRAINED->predict(underTest, noArray()));
+    return predictedClass;
 }
