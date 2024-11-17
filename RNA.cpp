@@ -104,18 +104,18 @@ int main(void)
             case '1':
                 cout << "------------------------------------------------------" << endl;
                 // Check if the font_features.csv file exists in the root folder
-				if (fs::exists("FONT_FEATURES.csv")) {
-					cout << "THE FONT_FEATURES.csv FILE ALREADY EXISTS IN THE ROOT FOLDER." << endl;
-					cout << "DO YOU WANT TO OVERWRITE IT? (Y/N): ";
-					cin >> overwrite;
+                if (fs::exists("FONT_FEATURES.csv")) {
+                  cout << "THE FONT_FEATURES.csv FILE ALREADY EXISTS IN THE ROOT FOLDER." << endl;
+                  cout << "DO YOU WANT TO OVERWRITE IT? (Y/N): ";
+                  cin >> overwrite;
 
-					if (overwrite == 'Y' || overwrite == 'y') {
-						processImagesAndSaveFeatures();
-					}
-				}
-				else {
-					processImagesAndSaveFeatures();
-				}
+                  if (overwrite == 'Y' || overwrite == 'y') {
+                    processImagesAndSaveFeatures();
+                  }
+                }
+                else {
+                  processImagesAndSaveFeatures();
+                }
 
                 system("pause");
                 break;
@@ -125,92 +125,92 @@ int main(void)
 				
                 // Check if the font_features.csv file exists in the root folder, if not, recommend option 1 to create it
                 if (!fs::exists("FONT_FEATURES.csv")) {
-					cout << "THE FONT_FEATURES.csv FILE DOES NOT EXIST IN THE ROOT FOLDER." << endl;
-					cout << "PLEASE RUN OPTION 1 TO CREATE IT." << endl;
-					system("pause");
-					break;
-                }
-                else {
-					loadFeaturesFromCSV("FONT_FEATURES.csv", fullFeatures, originalLabels);
-					splitData(fullFeatures, nFolds, trainMat, testMat, trainLabelsMat, testLabelsMat);
-                    cout << "WARNING: ALL MATRIX SIZES ARE GIVEN IN A [ COLUMNS X ROWS ] FORMAT:" << "\n\n";
-                    cout << "\tDESCRIPTOR SIZE : " << trainMat.cols << "\n";
-                    cout << "\tNUMBER OF CLASSES: " << originalLabels.size() << "\n\n";
-                    cout << "\tTRAINING MAT SIZE: " << trainMat.size() << "\n";
-                    cout << "\tTESTING  MAT SIZE: " << testMat.size() << "\n\n";
-                    cout << "\tTRAIN LABELS MAT SIZE: " << trainLabelsMat.size() << "\n";
-                    cout << "\tTEST LABELS MAT SIZE: " << testLabelsMat.size() << "\n\n";
-					system("pause");
+                  cout << "THE FONT_FEATURES.csv FILE DOES NOT EXIST IN THE ROOT FOLDER." << endl;
+                  cout << "PLEASE RUN OPTION 1 TO CREATE IT." << endl;
+                  system("pause");
+                  break;
+                        }
+                        else {
+                  loadFeaturesFromCSV("FONT_FEATURES.csv", fullFeatures, originalLabels);
+                  splitData(fullFeatures, nFolds, trainMat, testMat, trainLabelsMat, testLabelsMat);
+                            cout << "WARNING: ALL MATRIX SIZES ARE GIVEN IN A [ COLUMNS X ROWS ] FORMAT:" << "\n\n";
+                            cout << "\tDESCRIPTOR SIZE : " << trainMat.cols << "\n";
+                            cout << "\tNUMBER OF CLASSES: " << originalLabels.size() << "\n\n";
+                            cout << "\tTRAINING MAT SIZE: " << trainMat.size() << "\n";
+                            cout << "\tTESTING  MAT SIZE: " << testMat.size() << "\n\n";
+                            cout << "\tTRAIN LABELS MAT SIZE: " << trainLabelsMat.size() << "\n";
+                            cout << "\tTEST LABELS MAT SIZE: " << testLabelsMat.size() << "\n\n";
+                  system("pause");
                 }
                 break;
 
             case '3':
                 cout << "------------------------------------------------------" << endl;
 
-				if (trainMat.empty() || testMat.empty() || trainLabelsMat.empty() || testLabelsMat.empty()) {
-					cout << "ERROR: TRAINING AND TEST MATRICES HAVE NOT BEEN LOADED." << endl;
-					cout << "PLEASE RUN OPTION 2 TO LOAD THEM." << endl;
-					cout << "OR RUN OPTION 1 TO CREATE THEM." << endl << endl;
-					system("pause");
-					break;
-				}
+                if (trainMat.empty() || testMat.empty() || trainLabelsMat.empty() || testLabelsMat.empty()) {
+                  cout << "ERROR: TRAINING AND TEST MATRICES HAVE NOT BEEN LOADED." << endl;
+                  cout << "PLEASE RUN OPTION 2 TO LOAD THEM." << endl;
+                  cout << "OR RUN OPTION 1 TO CREATE THEM." << endl << endl;
+                  system("pause");
+                  break;
+                }
 
-				if (fs::exists("ANNfontTypesClassifierModel.yml")) {
-					cout << "THE FILE ANNfontTypesClassifierModel.yml ALREADY EXISTS IN THE ROOT FOLDER." << endl;
-					cout << "DO YOU WANT TO OVERWRITE IT? (Y/N): ";
-					cin >> overwrite;
+                if (fs::exists("ANNfontTypesClassifierModel.yml")) {
+                  cout << "THE FILE ANNfontTypesClassifierModel.yml ALREADY EXISTS IN THE ROOT FOLDER." << endl;
+                  cout << "DO YOU WANT TO OVERWRITE IT? (Y/N): ";
+                  cin >> overwrite;
 
-                    if (overwrite == 'N' || overwrite == 'n')
+                            if (overwrite == 'N' || overwrite == 'n')
+                                break;
+                }
+
+                nFeatures = trainMat.cols;
+                        nClasses = static_cast<int>(originalLabels.size());
+
+                        ANN_MLP_CreateBasic(ann, nFeatures, nClasses);
+                        cout << "\nTHE NUMBER OF DIFFERENT CLASSES IS " << nClasses << "\n";
+
+                // Filename for saving/loading trained models
+                filename_ANNmodel = (char*)"ANNfontTypesClassifierModel.yml";
+
+                // Train and save the model
+                ANN_MLP_TrainAndSave(ann, trainMat, trainLabelsMat, nClasses, filename_ANNmodel);
+
+                cout << "TRAINED MODEL SAVED AS: " << filename_ANNmodel << "\n";
+                system("pause");
                         break;
-				}
-
-				nFeatures = trainMat.cols;
-                nClasses = static_cast<int>(originalLabels.size());
-
-                ANN_MLP_CreateBasic(ann, nFeatures, nClasses);
-                cout << "\nTHE NUMBER OF DIFFERENT CLASSES IS " << nClasses << "\n";
-
-				// Filename for saving/loading trained models
-				filename_ANNmodel = (char*)"ANNfontTypesClassifierModel.yml";
-
-				// Train and save the model
-				ANN_MLP_TrainAndSave(ann, trainMat, trainLabelsMat, nClasses, filename_ANNmodel);
-
-				cout << "TRAINED MODEL SAVED AS: " << filename_ANNmodel << "\n";
-				system("pause");
-                break;
 
             case '4':
                 cout << "------------------------------------------------------" << endl;
 
-				if (!fs::exists("ANNfontTypesClassifierModel.yml")) {
-					cout << "THE FILE ANNfontTypesClassifierModel.yml DOES NOT EXIST IN THE ROOT FOLDER." << endl;
-                    cout << "PLEASE RUN OPTION 3 TO CREATE IT." << endl <<  endl;
-					system("pause");
-					break;
-				}
+                if (!fs::exists("ANNfontTypesClassifierModel.yml")) {
+                  cout << "THE FILE ANNfontTypesClassifierModel.yml DOES NOT EXIST IN THE ROOT FOLDER." << endl;
+                            cout << "PLEASE RUN OPTION 3 TO CREATE IT." << endl <<  endl;
+                  system("pause");
+                  break;
+                }
 
-                // CHECK IF A MODEL IS LOADED
-				if (!annTRAINED.empty()) {
-					cout << "THERE IS A MODEL LOADED IN THE SYSTEM." << endl;
-					cout << "DO YOU WANT TO LOAD A NEW MODEL? (Y/N): ";
-					cin >> overwrite;
+                        // CHECK IF A MODEL IS LOADED
+                if (!annTRAINED.empty()) {
+                  cout << "THERE IS A MODEL LOADED IN THE SYSTEM." << endl;
+                  cout << "DO YOU WANT TO LOAD A NEW MODEL? (Y/N): ";
+                  cin >> overwrite;
 
-					if (overwrite == 'N' || overwrite == 'n')
-						break;
+                  if (overwrite == 'N' || overwrite == 'n')
+                    break;
 
-                    cout << endl;
-				}
+                            cout << endl;
+                }
 
-				// RELEASE MEMORY FOR LOADED MODEL
-				annTRAINED.release();
-                cout << "LOADING A TRAINED MODEL FROM FILE.\n\n";
-                // Now, we can load the saved model
-                filename_ANNmodel = (char*)"ANNfontTypesClassifierModel.yml";
-                annTRAINED = cv::ml::ANN_MLP::load(filename_ANNmodel);
+                // RELEASE MEMORY FOR LOADED MODEL
+                annTRAINED.release();
+                        cout << "LOADING A TRAINED MODEL FROM FILE.\n\n";
+                        // Now, we can load the saved model
+                        filename_ANNmodel = (char*)"ANNfontTypesClassifierModel.yml";
+                        annTRAINED = cv::ml::ANN_MLP::load(filename_ANNmodel);
 
-				annTRAINED.empty() ? cout << "ERROR: FAILED TO LOAD THE MODEL." << "\n\n" : cout << "MODEL SUCCESSFULLY LOADED FROM FILE: " << filename_ANNmodel << "\n\n";
-				system("pause");
+                annTRAINED.empty() ? cout << "ERROR: FAILED TO LOAD THE MODEL." << "\n\n" : cout << "MODEL SUCCESSFULLY LOADED FROM FILE: " << filename_ANNmodel << "\n\n";
+                system("pause");
                 break;
 
             case '5':
@@ -224,13 +224,13 @@ int main(void)
                     break;
                 }
 
-				if (annTRAINED.empty()) {
-					cout << "ERROR: NO TRAINED MODEL HAS BEEN LOADED." << endl;
-					cout << "PLEASE RUN OPTION 4 TO LOAD IT." << endl;
-					cout << "OR RUN OPTION 3 TO TRAIN A NEW MODEL." << endl << endl;
-					system("pause");
-					break;
-				}
+                if (annTRAINED.empty()) {
+                  cout << "ERROR: NO TRAINED MODEL HAS BEEN LOADED." << endl;
+                  cout << "PLEASE RUN OPTION 4 TO LOAD IT." << endl;
+                  cout << "OR RUN OPTION 3 TO TRAIN A NEW MODEL." << endl << endl;
+                  system("pause");
+                  break;
+                }
 
                 nClasses = static_cast<int>(originalLabels.size());
                 ANN_MLP_Test(annTRAINED, testMat, testLabelsMat, nClasses);
