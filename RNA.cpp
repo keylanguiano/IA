@@ -241,19 +241,19 @@ int main(void)
                 cout << "------------------------------------------------------" << endl;
 
 				if (annTRAINED.empty()) {
-					cout << "ERROR: NO SE HA CARGADO UN MODELO ENTRENADO." << endl;
-					cout << "POR FAVOR EJECUTE LA OPCION 4 PARA CARGARLO." << endl;
-					cout << "O EJECUTE LA OPCION 3 PARA ENTRENAR UN NUEVO MODELO." << endl << endl;
+					cout << "ERROR: NO TRAINED MODEL LOADED." << endl;
+					cout << "PLEASE RUN OPTION 4 TO LOAD IT." << endl;
+					cout << "OR RUN OPTION 3 TO TRAIN A NEW MODEL." << endl << endl;
 					system("pause");
 					break;
 				}
 
-				cout << "LA MUESTRA SE DEBE DE ENCONTRAR EN LA RUTA ./Images/TESTING/" << endl;
-				cout << "INGRESE EL NOMBRE DEL ARCHIVO: ";
+				cout << "THE SAMPLE MUST BE FOUND ON THE ROUTE ./Images/TESTING/" << endl;
+				cout << "ENTER FILE NAME: ";
 				cin >> filename;
 				route = routePath + filename;
                 pred = ANN_MLP_Test_Single(annTRAINED, route);
-				cout << "\nPREDICCION: " << originalLabels[pred] << "\n\n";
+				cout << "\nPREDICTION: " << originalLabels[pred] << "\n\n";
 				system("pause");
                 break;
 
@@ -566,45 +566,45 @@ int ANN_MLP_Test(Ptr <ml::ANN_MLP>& ann, Mat& test_data, Mat& testLabelsMat, int
 // CASE 6: TEST THE MODEL WITH A SINGLE IMAGE
 int ANN_MLP_Test_Single(string filename, Ptr <ml::ANN_MLP>& annTRAINED)
 {
-    // Cargar la imagen de muestra
+    // Load the sample image
     Mat sample = imread(imagePath);
     if (sample.empty())
     {
-        cerr << "ERROR: NO SE PUDO CARGAR LA IMAGEN DESDE LA RUTA PROPORCIONADA." << endl;
+        cerr << "ERROR: COULD NOT LOAD IMAGE FROM THE PROVIDED PATH." << endl;
         return -1;
     }
 
-    // Preprocesamiento de la muestra
+    // Preprocessing the sample
     Mat preprocSample;
-    cvtColor(sample, preprocSample, COLOR_BGR2GRAY); // Convertir a escala de grises
+    cvtColor(sample, preprocSample, COLOR_BGR2GRAY); // Convert to grayscale
 
-    // Invertir colores si es necesario (fondo negro y letras blancas)
+    // Invert colors if necessary (black background and white letters)
     double minVal, maxVal;
     minMaxLoc(preprocSample, &minVal, &maxVal);
     if (maxVal == 0) {
-        cerr << "ERROR: LA IMAGEN ESTÁ COMPLETAMENTE NEGRA." << endl;
+        cerr << "ERROR: THE IMAGE IS COMPLETELY BLACK." << endl;
         return -1;
     }
     if (minVal == 0 && maxVal == 255) {
-        // La imagen ya tiene fondo negro y letras blancas
+        // The image already has a black background and white letters
     }
     else {
-        // Invertir colores
+        // Invert colors
         bitwise_not(preprocSample, preprocSample);
     }
 
-    preprocSample.convertTo(preprocSample, CV_8U, 1.0 / 255.0); // Normalizar
+    preprocSample.convertTo(preprocSample, CV_8U, 1.0 / 255.0); // Normalize
 
     vector<float> featureVector;
     hog.compute(preprocSample, featureVector);
     int numFeatures = featureVector.size();
 
-    // Vector a matriz
+    // Vector to matrix
     Mat underTest = Mat::zeros(1, numFeatures, CV_32FC1);
     for (int k = 0; k < numFeatures; k++)
         underTest.at<float>(0, k) = featureVector[k];
 
-    // Predicción
+    // Prediction
     int predictedClass = static_cast<int>(annTRAINED->predict(underTest, noArray()));
     return predictedClass;
 }
