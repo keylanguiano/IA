@@ -16,9 +16,9 @@ namespace fs = std::filesystem;
 HOGDescriptor hog
 (
     Size(1024, 512), // winSize
-    Size(64, 64),   // blockSize
-    Size(32, 32),   // blockStride
-    Size(64, 64),   // cellSize
+    Size(128, 128),   // blockSize
+    Size(64, 64),   // blockStride
+    Size(128, 128),   // cellSize
     9,              // nbins
     1,              // derivAper
     -1,             // winSigma
