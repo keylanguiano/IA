@@ -16,9 +16,9 @@ namespace fs = std::filesystem;
 HOGDescriptor hog
 (
     Size(1024, 512), // winSize
-    Size(64, 64),   // blockSize
-    Size(32, 32),   // blockStride
-    Size(64, 64),   // cellSize
+    Size(128, 128),   // blockSize
+    Size(64, 64),   // blockStride
+    Size(128, 128),   // cellSize
     9,              // nbins
     1,              // derivAper
     -1,             // winSigma
@@ -50,10 +50,6 @@ int ANN_MLP_Test(Ptr <ml::ANN_MLP> & ann, Mat & testMat, Mat & testLabelsMat, in
 
 // CASE 6: TEST THE MODEL WITH A SINGLE IMAGE
 int ANN_MLP_Test_Single(Ptr<ml::ANN_MLP>& annTRAINED, const string& imagePath);
-
-// Global variable
-// Corresponds to the size of sub-images
-int SZ = 20;
 
 int main(void)
 {
@@ -245,6 +241,7 @@ int main(void)
                     break;
                 }
 
+                cout << "\nNOTE: THE IMAGE FOR TESTING MUST HAVE DIMENSIONS " << hog.winSize.width << "x" << hog.winSize.height << endl;
                 cout << "\tTHE SAMPLE MUST BE FOUND ON THE ROUTE ./Images/TESTING/" << endl;
                 cout << "\tENTER FILE NAME: ";
                 cin >> filename;
@@ -557,6 +554,12 @@ int ANN_MLP_Test_Single(Ptr<ml::ANN_MLP>& annTRAINED, const string& imagePath)
         return -1;
     }
 
+    // Check the image dimensions
+    if (sample.cols != hog.winSize.width || sample.rows != hog.winSize.height) {
+        cerr << "\tERROR: THE IMAGE MUST HAVE DIMENSIONS " << hog.winSize.width << "x" << hog.winSize.height << " TO BE PROCESSED." << endl;
+        return -1;
+    }
+
     // Preprocessing the sample
     Mat preprocSample;
     cvtColor(sample, preprocSample, COLOR_BGR2GRAY); // Convert to grayscale
@@ -586,8 +589,19 @@ int ANN_MLP_Test_Single(Ptr<ml::ANN_MLP>& annTRAINED, const string& imagePath)
     Mat underTest = Mat::zeros(1, numFeatures, CV_32FC1);
     for (int k = 0; k < numFeatures; k++)
         underTest.at<float>(0, k) = featureVector[k];
-   
+
     // Prediction
-    int predictedClass = static_cast<int>(annTRAINED->predict(underTest, noArray()));
+    Mat response;
+    annTRAINED->predict(underTest, response);
+
+    // Get the predicted class and its probability
+    Point maxLoc;
+    minMaxLoc(response, 0, 0, 0, &maxLoc);
+    int predictedClass = maxLoc.x;
+    float confidence = response.at<float>(0, predictedClass);
+
+    cout << "Predicted class: " << predictedClass << endl;
+    cout << "Confidence: " << confidence << endl;
+
     return predictedClass;
 }
