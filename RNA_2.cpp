@@ -108,8 +108,8 @@ int main(void)
                 cout << "------------------------------------------------------" << endl;
                 
                 // Revisar si existe en la carpeta raiz el archivo font_features.csv
-				if (fs::exists("FONT_FEATURES.csv")) {
-					cout << "EL ARCHIVO FONT_FEATURES.csv YA EXISTE EN LA CARPETA RAIZ." << endl;
+				if (fs::exists("FONT_FEATURES_2.csv")) {
+					cout << "EL ARCHIVO FONT_FEATURES_2.csv YA EXISTE EN LA CARPETA RAIZ." << endl;
 					cout << "DESEA SOBREESCRIBIRLO? (S/N): ";
 					cin >> overwrite;
 
@@ -128,14 +128,14 @@ int main(void)
                 cout << "------------------------------------------------------" << endl;
 				
                 // Revisar si existe en la carpeta raiz el archivo font_features.csv, si no existe recomendar la opcion 1 para 
-                if (!fs::exists("FONT_FEATURES.csv")) {
-					cout << "EL ARCHIVO FONT_FEATURES.csv NO EXISTE EN LA CARPETA RAIZ." << endl;
+                if (!fs::exists("FONT_FEATURES_2.csv")) {
+					cout << "EL ARCHIVO FONT_FEATURES_2.csv NO EXISTE EN LA CARPETA RAIZ." << endl;
 					cout << "POR FAVOR EJECUTE LA OPCION 1 PARA CREARLO." << endl;
 					system("pause");
 					break;
                 }
                 else {
-					loadFeaturesFromCSV("FONT_FEATURES.csv", fullFeatures, originalLabels);
+					loadFeaturesFromCSV("FONT_FEATURES_2.csv", fullFeatures, originalLabels);
 					splitData(fullFeatures, nFolds, trainMat, testMat, trainLabelsMat, testLabelsMat);
                     cout << "WARNING: ALL MATRIX SIZES ARE GIVEN IN A [ COLUMNS X ROWS ] FORMAT:" << "\n\n";
                     cout << "\tDESCRIPTOR SIZE : " << trainMat.cols << "\n";
@@ -159,8 +159,8 @@ int main(void)
 					break;
 				}
 
-				if (fs::exists("ANNfontTypesClassifierModel.yml")) {
-					cout << "EL ARCHIVO ANNfontTypesClassifierModel.yml YA EXISTE EN LA CARPETA RAIZ." << endl;
+				if (fs::exists("ANNfontTypesClassifierModel_2.yml")) {
+					cout << "EL ARCHIVO ANNfontTypesClassifierModel_2.yml YA EXISTE EN LA CARPETA RAIZ." << endl;
 					cout << "DESEA SOBREESCRIBIRLO? (S/N): ";
 					cin >> overwrite;
 
@@ -175,7 +175,7 @@ int main(void)
                 cout << "\nTHE NUMBER OF DIFFERENT CLASSES IS " << nClasses << "\n";
 
 				// Filename for saving/loading trained models
-				filename_ANNmodel = (char*)"ANNfontTypesClassifierModel.yml";
+				filename_ANNmodel = (char*)"ANNfontTypesClassifierModel_2.yml";
 
 				// Train and save the model
 				ANN_MLP_TrainAndSave(ann, trainMat, trainLabelsMat, nClasses, filename_ANNmodel);
@@ -187,8 +187,8 @@ int main(void)
             case '4':
                 cout << "------------------------------------------------------" << endl;
 
-				if (!fs::exists("ANNfontTypesClassifierModel.yml")) {
-					cout << "EL ARCHIVO ANNfontTypesClassifierModel.yml NO EXISTE EN LA CARPETA RAIZ." << endl;
+				if (!fs::exists("ANNfontTypesClassifierModel_2.yml")) {
+					cout << "EL ARCHIVO ANNfontTypesClassifierModel_2.yml NO EXISTE EN LA CARPETA RAIZ." << endl;
                     cout << "POR FAVOR EJECUTE LA OPCION 3 PARA CREARLO." << endl <<  endl;
 					system("pause");
 					break;
@@ -210,7 +210,7 @@ int main(void)
 				annTRAINED.release();
                 cout << "LOADING A TRAINED MODEL FROM FILE.\n\n";
                 // Now, we can load the saved model
-                filename_ANNmodel = (char*)"ANNfontTypesClassifierModel.yml";
+                filename_ANNmodel = (char*)"ANNfontTypesClassifierModel_2.yml";
                 annTRAINED = cv::ml::ANN_MLP::load(filename_ANNmodel);
 
 				annTRAINED.empty() ? cout << "ERROR: NO SE PUDO CARGAR EL MODELO." << "\n\n" : cout << "MODELO CARGADO CORRECTAMENTE DESDE EL ARCHIVO: " << filename_ANNmodel << "\n\n";
@@ -343,10 +343,10 @@ void processImagesAndSaveFeatures() {
         }
     }
 
-    bool success = saveToCSV("FONT_FEATURES.csv", data, labels);
+    bool success = saveToCSV("FONT_FEATURES_2.csv", data, labels);
 
     if (success)
-        cout << "\nCARACTERISTICAS GUARDADAS EN EL ARCHIVO: FONT_FEATURES.csv" << endl;
+        cout << "\nCARACTERISTICAS GUARDADAS EN EL ARCHIVO: FONT_FEATURES_2.csv" << endl;
 }
 
 // GUARDAR LAS CARATERISTICAS EN UN ARCHIVO .CSV

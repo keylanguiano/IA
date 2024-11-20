@@ -53,5 +53,5 @@ set(CMAKE_MAKEFILE_PRODUCTS
 
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
-  "CMakeFiles/RNA_2.dir/DependInfo.cmake"
+  "CMakeFiles/RNA_2.3.dir/DependInfo.cmake"
   )

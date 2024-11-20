@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(RNA_2)
+project(RNA_2.3)
 
 # Requiere C++17
 set(CMAKE_CXX_STANDARD 17)
@@ -12,7 +12,7 @@ find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 # Crear el ejecutable
-add_executable(RNA_2 ./RNA_2.cpp)
+add_executable(RNA_2.3 ./RNA_2.3.cpp)
 
 # Vincular las bibliotecas de OpenCV a tu ejecutable
-target_link_libraries(RNA_2 ${OpenCV_LIBS})
+target_link_libraries(RNA_2.3 ${OpenCV_LIBS})
