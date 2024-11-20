@@ -12,7 +12,7 @@ find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 # Crear el ejecutable
-add_executable(RNA_2.3 ./RNA_2.3.cpp)
+add_executable(RNA_2.3 "key codes/RNA_2.3.cpp")
 
 # Vincular las bibliotecas de OpenCV a tu ejecutable
 target_link_libraries(RNA_2.3 ${OpenCV_LIBS})

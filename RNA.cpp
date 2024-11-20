@@ -1,6 +1,8 @@
 #include <iostream>
 #include <filesystem>
 #include <fstream>
+#include <cmath>
+#include <iomanip> 
 using namespace std;
 
 #include <opencv2/highgui.hpp>
@@ -49,7 +51,8 @@ int ANN_MLP_TrainAndSave(Ptr <ml::ANN_MLP> & ann, Mat & train_data, Mat & trainL
 int ANN_MLP_Test(Ptr <ml::ANN_MLP> & ann, Mat & testMat, Mat & testLabelsMat, int nClasses);
 
 // CASE 6: TEST THE MODEL WITH A SINGLE IMAGE
-int ANN_MLP_Test_Single(Ptr<ml::ANN_MLP>& annTRAINED, const string& imagePath);
+int ANN_MLP_Test_Single(Ptr<ml::ANN_MLP>& annTRAINED, const string& imagePath, const vector<string>& originalLabels);
+void softmax(const Mat& input, Mat& output);
 
 int main(void)
 {
@@ -69,7 +72,7 @@ int main(void)
     Ptr<ANN_MLP> annTRAINED;
 
     // CASE 6 VARIABLES:
-    string routePath = "../Images/TRAINING DATASET/Berlin Sans FB/";
+    string routePath = "./Images/TESTING/";
     string filename;
 	string route;
     int pred;
@@ -87,7 +90,7 @@ int main(void)
         cout << "\t 2. LOAD THE .CSV FILE TO SEPARATE TRAINING AND TEST MATRICES" << endl;
         cout << "\t 3. TRAIN THE ANN MLP WITH MATRICES LOADED INTO THE SYSTEM AND SAVE THE MODEL" << endl;
         cout << "\t 4. LOAD A TRAINED MODEL" << endl;
-        cout << "\t 5. TEST THE MODEL WITH THE TRAINING MATRIX AND GENERATE A CONFUSION MATRIX" << endl;
+        cout << "\t 5. TEST THE MODEL WITH THE TESTING MATRIX AND GENERATE A CONFUSION MATRIX" << endl;
         cout << "\t 6. TEST THE MODEL WITH A SINGLE IMAGE" << endl;
         cout << "\nPRESS ANY KEY TO EXIT" << endl;
 
@@ -202,8 +205,17 @@ int main(void)
                 filename_ANNmodel = (char*)"ANNfontTypesClassifierModel.yml";
                 annTRAINED = cv::ml::ANN_MLP::load(filename_ANNmodel);
 
-				annTRAINED.empty() ? cout << "\tERROR: FAILED TO LOAD THE MODEL." << "\n\n" : cout << "\tMODEL SUCCESSFULLY LOADED FROM FILE: " << filename_ANNmodel << "\n\n";
-				system("pause");
+                if (annTRAINED.empty()) {
+                    cout << "\tERROR: FAILED TO LOAD THE MODEL." << "\n\n";
+                }
+                else {
+                    cout << "\tMODEL SUCCESSFULLY LOADED FROM FILE: " << filename_ANNmodel << "\n\n";
+                    if (originalLabels.empty()) {
+                        cout << "\tTHE ORIGINAL LABELS ARE NOT LOADED." << endl;
+                        cout << "\tPLEASE RUN OPTION 2 TO LOAD THEM FROM THE CSV FILE." << endl << endl;
+                    }
+                }
+                system("pause");
                 break;
 
             case '5':
@@ -240,15 +252,20 @@ int main(void)
                     system("pause");
                     break;
                 }
+                if (originalLabels.empty()) {
+                    cout << "\tTHE ORIGINAL LABELS ARE NOT LOADED." << endl;
+                    cout << "\tPLEASE RUN OPTION 2 TO LOAD THEM FROM THE CSV FILE." << endl << endl;
+                    system("pause");
+                    break;
+                }
 
-                // Keyla
-                // cout << "\tTHE SAMPLE MUST BE FOUND ON THE ROUTE ../Images/TESTING/" << endl;
-                cout << "\nNOTE: THE IMAGE FOR TESTING MUST HAVE DIMENSIONS " << hog.winSize.width << "x" << hog.winSize.height << endl;
+                cout << "\n\tNOTE: THE IMAGE FOR TESTING MUST HAVE DIMENSIONS " << hog.winSize.width << "x" << hog.winSize.height << endl;
                 cout << "\tTHE SAMPLE MUST BE FOUND ON THE ROUTE ./Images/TESTING/" << endl;
                 cout << "\tENTER FILE NAME: ";
                 cin >> filename;
                 route = routePath + filename;
-                pred = ANN_MLP_Test_Single(annTRAINED, route);
+                pred = ANN_MLP_Test_Single(annTRAINED, route, originalLabels);
+
                 cout << "\n\tPREDICTION: " << originalLabels[pred] << "\n\n";
                 system("pause");
                 break;
@@ -548,7 +565,23 @@ int ANN_MLP_Test(Ptr <ml::ANN_MLP>& ann, Mat& test_data, Mat& testLabelsMat, int
 }
 
 // CASE 6: TEST THE MODEL WITH A SINGLE IMAGE
-int ANN_MLP_Test_Single(Ptr<ml::ANN_MLP>& annTRAINED, const string& imagePath)
+
+// Función para calcular softmax
+void softmax(const Mat& input, Mat& output) {
+    output = Mat::zeros(input.size(), input.type());
+    double sum = 0.0;
+
+    for (int i = 0; i < input.cols; ++i) {
+        output.at<float>(0, i) = exp(input.at<float>(0, i));
+        sum += output.at<float>(0, i);
+    }
+
+    for (int i = 0; i < input.cols; ++i) {
+        output.at<float>(0, i) /= sum;
+    }
+}
+
+int ANN_MLP_Test_Single(Ptr<ml::ANN_MLP>& annTRAINED, const string& imagePath, const vector<string>& originalLabels)
 {
     // Load the sample image
     Mat sample = imread(imagePath);
@@ -598,14 +631,35 @@ int ANN_MLP_Test_Single(Ptr<ml::ANN_MLP>& annTRAINED, const string& imagePath)
     Mat response;
     annTRAINED->predict(underTest, response);
 
+    // Apply softmax to the response
+    Mat softmaxResponse;
+    softmax(response, softmaxResponse);
+
     // Get the predicted class and its probability
     Point maxLoc;
-    minMaxLoc(response, 0, 0, 0, &maxLoc);
+    minMaxLoc(softmaxResponse, 0, 0, 0, &maxLoc);
     int predictedClass = maxLoc.x;
-    float confidence = response.at<float>(0, predictedClass);
+    float confidence = softmaxResponse.at<float>(0, predictedClass);
 
-    cout << "Predicted class: " << predictedClass << endl;
-    cout << "Confidence: " << confidence << endl;
+    // Calculate confidence in percentage
+    float confidencePercentage = confidence * 100.0f;
+
+    cout << "\n\tPREDICTED CLASS: " << originalLabels[predictedClass] << " (" << predictedClass << ")" << endl;
+    cout << "\tCONFIDENCE: " << confidencePercentage << "%" << endl;
+
+    // Print all classes with their confidence percentages
+    cout << "\n\tALL PREDICTIONS:" << endl;
+    float totalPercentage = 0.0f;
+    for (int i = 0; i < softmaxResponse.cols; ++i) {
+        float classConfidence = softmaxResponse.at<float>(0, i) * 100.0f;
+        totalPercentage += classConfidence;
+        cout << "\t" << fixed << setprecision(3) << classConfidence << "%\t" << "(" << i << ") " << originalLabels[i] << endl;
+    }
+
+    // Print total percentage
+    cout << "\t----------------------------------" << endl;
+    cout << "\t" << fixed << setprecision(1) << totalPercentage << "%\t"  "TOTAL PERCENTAGE" << endl;
 
     return predictedClass;
 }
+

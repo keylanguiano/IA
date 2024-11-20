@@ -1,0 +1,60 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.10"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "RNA_2.3",
+					"targetIndexes" : 
+					[
+						0
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "RNA_2.3::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-RNA_2.3-Debug-e29440b3ee9cec4abf4d.json",
+					"name" : "RNA_2.3",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "C:/Users/FER TORRES/Documents/MATERIAS/INTELIGENCIA ARTIFICIAL/PRACTICA/out/build/x64-Debug",
+		"source" : "C:/Users/FER TORRES/Documents/MATERIAS/INTELIGENCIA ARTIFICIAL/PRACTICA"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 7
+	}
+}
