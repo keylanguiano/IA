@@ -42,9 +42,7 @@ Mat shuffleData(Mat fullFeatures);
 void splitData(const Mat fullFeatures, int nFolds, Mat& trainMat, Mat& testMat, Mat& trainLabelsMat, Mat& testLabelsMat);
 
 // CASE 3: TRAIN THE ANN MLP WITH MATRICES LOADED INTO THE SYSTEM AND SAVE THE MODEL
-Ptr <ml::ANN_MLP> ANN_MLP_CreateBasic (int nFeatures, int nClasses);
 int ANN_MLP_CreateBasic(Ptr <ml::ANN_MLP> & ann, int nFeatures, int nClasses);
-int ANN_MLP_Train(Ptr <ml::ANN_MLP> & ann, Mat & train_data, Mat & trainLabelsMat, int nClasses);
 int ANN_MLP_TrainAndSave(Ptr <ml::ANN_MLP> & ann, Mat & train_data, Mat & trainLabelsMat, int nClasses, char * filename_ANNmodel);
 
 // CASE 5: TEST THE MODEL WITH THE TRAINING MATRIX AND GENERATE A CONFUSION MATRIX
@@ -52,10 +50,6 @@ int ANN_MLP_Test(Ptr <ml::ANN_MLP> & ann, Mat & testMat, Mat & testLabelsMat, in
 
 // CASE 6: TEST THE MODEL WITH A SINGLE IMAGE
 int ANN_MLP_Test_Single(Ptr<ml::ANN_MLP>& annTRAINED, const string& imagePath);
-
-// Global variable
-// Corresponds to the size of sub-images
-int SZ = 20;
 
 int main(void)
 {
@@ -134,17 +128,12 @@ int main(void)
 					loadFeaturesFromCSV("FONT_FEATURES.csv", fullFeatures, originalLabels);
 					splitData(fullFeatures, nFolds, trainMat, testMat, trainLabelsMat, testLabelsMat);
                     cout << "\tWARNING: ALL MATRIX SIZES ARE GIVEN IN A [ COLUMNS X ROWS ] FORMAT:" << "\n\n";
-                    cout << "\tDESCRIPTOR SIZE : " << trainMat.cols << "\n";
-                    cout << "\tNUMBER OF CLASSES: " << originalLabels.size() << "\n\n";
-                    cout << "\tTRAINING MAT SIZE: " << trainMat.size() << "\n";
-                    cout << "\tTESTING  MAT SIZE: " << testMat.size() << "\n\n";
-                    cout << "\tTRAIN LABELS MAT SIZE: " << trainLabelsMat.size() << "\n";
-                    cout << "\tTEST LABELS MAT SIZE: " << testLabelsMat.size() << "\n\n";
-
-                    // Imprimir la matriz originalLabels
-					cout << "\tORIGINAL LABELS: ";
-                    for (int i = 0; i < originalLabels.size(); i++)
-                        cout << "\n\t" << originalLabels[i] << " ";
+                    cout << "\tDESCRIPTOR SIZE:\t" << trainMat.cols << "\n";
+                    cout << "\tNUMBER OF CLASSES:\t" << originalLabels.size() << "\n\n";
+                    cout << "\tTRAINING MAT SIZE:\t" << trainMat.size() << "\n";
+                    cout << "\tTESTING  MAT SIZE:\t" << testMat.size() << "\n\n";
+                    cout << "\tTRAIN LABELS MAT SIZE:\t" << trainLabelsMat.size() << "\n";
+                    cout << "\tTEST LABELS MAT SIZE:\t" << testLabelsMat.size() << "\n\n";
 
 					system("pause");
                 }
@@ -252,7 +241,10 @@ int main(void)
                     break;
                 }
 
-                cout << "\tTHE SAMPLE MUST BE FOUND ON THE ROUTE ../Images/TESTING/" << endl;
+                // Keyla
+                // cout << "\tTHE SAMPLE MUST BE FOUND ON THE ROUTE ../Images/TESTING/" << endl;
+                cout << "\nNOTE: THE IMAGE FOR TESTING MUST HAVE DIMENSIONS " << hog.winSize.width << "x" << hog.winSize.height << endl;
+                cout << "\tTHE SAMPLE MUST BE FOUND ON THE ROUTE ./Images/TESTING/" << endl;
                 cout << "\tENTER FILE NAME: ";
                 cin >> filename;
                 route = routePath + filename;
@@ -289,7 +281,7 @@ void extractTextureFeatures(const Mat& image, vector<float>& features) {
         hog.compute(imgGray, hogFeatures);
     }
     catch (const cv::Exception& e) {
-        cout << "ERROR: EXCEPTION WHEN CALCULATING HOG: " << e.what() << endl;
+        cout << "\n\tERROR: EXCEPTION WHEN CALCULATING HOG: " << e.what() << endl;
         return;
     }
 
@@ -299,7 +291,9 @@ void extractTextureFeatures(const Mat& image, vector<float>& features) {
 
 // PROCESS SAMPLES AND SAVE FEATURES
 void processImagesAndSaveFeatures() {
-    string samplesPath = "../IMAGES/TRAINING DATASET/"; // Path to the samples folder
+// Keyla
+// string samplesPath = "../IMAGES/TRAINING DATASET/"; // Path to the samples folder
+    string samplesPath = "./images/TRAINING DATASET"; // Path to the samples folder
     vector<vector<float>> data;
     vector<string> labels;
 
@@ -335,7 +329,7 @@ void processImagesAndSaveFeatures() {
 bool saveToCSV(const string& filename, const vector<vector<float>>& data, const vector<string>& labels) {
     ofstream file(filename);
     if (!file.is_open()) {
-        cout << "\ntERROR: COULD NOT OPEN FILE TO WRITE: " << filename << endl;
+        cout << "\n\tERROR: COULD NOT OPEN FILE TO WRITE: " << filename << endl;
         return false;
     }
 
@@ -355,7 +349,7 @@ bool saveToCSV(const string& filename, const vector<vector<float>>& data, const 
 void loadFeaturesFromCSV(const string& filename, Mat& fullFeatures, vector<string>& originalLabels) {
     ifstream file(filename);
     if (!file.is_open()) {
-        cout << "\nERROR: COULD NOT OPEN FILE TO READ: " << filename << endl;
+        cout << "\n\tERROR: COULD NOT OPEN FILE TO READ: " << filename << endl;
         return;
     }
 
@@ -402,14 +396,14 @@ void loadFeaturesFromCSV(const string& filename, Mat& fullFeatures, vector<strin
         }
     }
 
-    cout << "FEATURES LOADED SUCCESSFULLY FROM FILE: " << filename << endl;
+    cout << "\tFEATURES LOADED SUCCESSFULLY FROM FILE: " << filename << endl;
 }
 
 // FUNCTION TO SAVE ANY MATRIX TO A .CSV FILE
 void saveMatToCSV(const string& filename, const Mat& matrix) {
     ofstream file(filename);
     if (!file.is_open()) {
-        cout << "ERROR: COULD NOT OPEN FILE TO WRITE: " << filename << endl;
+        cout << "\n\tERROR: COULD NOT OPEN FILE TO WRITE: " << filename << endl;
         return;
     }
 
@@ -477,76 +471,56 @@ void splitData(const Mat fullFeatures, int nFolds, Mat& trainMat, Mat& testMat, 
 
 // CASE 3
 // TRAINING THE CLASSIFIER
-int ANN_MLP_CreateBasic (Ptr <ml::ANN_MLP> & ann, int nFeatures, int nClasses)
+int ANN_MLP_CreateBasic(Ptr <ml::ANN_MLP> & ann, int nFeatures, int nClasses)
 {
-    cout << "\n\tCREATING AN ANN_MLP\n";
+    cout << "\tCREATING AN ANN_MLP\n";
 
-    ann = ml::ANN_MLP::create ();
-    Mat_ <int> layers (3, 1);
+    ann = ml::ANN_MLP::create();
+    Mat_<int>layers (3, 1);
     layers(0) = nFeatures;              // input
-    layers (1) = nFeatures * 2 + 1;     // hidden
+    layers(1) = nFeatures * 2 + 1;     // hidden
     layers(2) = nClasses;               // output, 1 pin per class.
-    ann -> setLayerSizes (layers);
-    ann -> setActivationFunction (ml::ANN_MLP::SIGMOID_SYM, 0, 0);
-    ann -> setTermCriteria (TermCriteria (TermCriteria::MAX_ITER + TermCriteria::EPS, 300, 0.0001));
-    ann -> setTrainMethod (ml::ANN_MLP::BACKPROP, 0.0001);
+    ann -> setLayerSizes(layers);
+    ann -> setActivationFunction(ml::ANN_MLP::SIGMOID_SYM, 0, 0);
+    ann -> setTermCriteria(TermCriteria(TermCriteria::MAX_ITER + TermCriteria::EPS, 300, 0.0001));
+    ann -> setTrainMethod(ml::ANN_MLP::BACKPROP, 0.0001);
 
     return true;
 }
 
-Ptr <ml::ANN_MLP> ANN_MLP_CreateBasic (int nFeatures, int nClasses)
-{
-    cout << "\n\n\nCreating an ANN_MLP\n\n";
-
-    Ptr <ml::ANN_MLP> ann = ml::ANN_MLP::create ();
-    Mat_ <int> layers (3, 1);
-    layers (0) = nFeatures;
-    layers (1) = nFeatures * 2 + 1;
-    layers (2) = nClasses;
-    ann -> setLayerSizes (layers);
-    ann -> setActivationFunction (ml::ANN_MLP::SIGMOID_SYM, 0, 0);
-    ann -> setTermCriteria (TermCriteria (TermCriteria::MAX_ITER + TermCriteria::EPS, 300, 0.0001));
-    ann -> setTrainMethod (ml::ANN_MLP::BACKPROP, 0.0001);
-
-    return ann;
-}
-
-int ANN_MLP_Train (Ptr <ml::ANN_MLP> & ann, Mat & train_data, Mat & trainLabelsMat, int nClasses)
-{
-    Mat train_classes = Mat::zeros (train_data.rows, nClasses, CV_32FC1);
-
-    for (int i = 0; i < train_classes.rows; i ++)
-    {
-        train_classes.at <float> (i, trainLabelsMat.at <uchar> (i)) = 1.0;
-    }
-
-    cout << "\nTrain data size: " << train_data.size () << "\nTrain classes size: " << train_classes.size () << "\n\n";
-
-    cout << "Training the ANN... (please wait)\n";
-    ann -> train (train_data, ml::ROW_SAMPLE, train_classes);
-    cout << "Done.\n\n";
-
-    return 0;
-}
-
-int ANN_MLP_TrainAndSave(Ptr<ml::ANN_MLP> &ann, Mat &train_data, Mat &trainLabelsMat, int nClasses, char *filename_ANNmodel)
+int ANN_MLP_TrainAndSave(Ptr<ml::ANN_MLP>& ann, Mat& train_data, Mat& trainLabelsMat, int nClasses, char* filename_ANNmodel)
 {
     Mat train_classes = Mat::zeros(train_data.rows, nClasses, CV_32FC1);
 
-    for(int i = 0; i < train_classes.rows; i ++)
+    for (int i = 0; i < train_classes.rows; i++)
     {
-        train_classes.at<float>(i, trainLabelsMat.at <uchar> (i)) = 1.0;
+        train_classes.at<float>(i, trainLabelsMat.at <uchar>(i)) = 1.0;
     }
 
-    cout << "\n\tTRAIN DATA SIZE: " << train_data.size () << "\n\tTRAIN CLASSES SIZE: " << train_classes.size () << "\n";
+    cout << "\n\tTRAIN DATA SIZE:\t" << train_data.size() << "\n\tTRAIN CLASSES SIZE:\t" << train_classes.size() << "\n";
     cout << "\n\tTRAINING THE ANN... (PLEASE WAIT)\n";
-    ann -> train(train_data, ml::ROW_SAMPLE, train_classes);
 
-    ann -> save(filename_ANNmodel);
-    cout << "\n\tTRAINED MODEL SAVED AS: " << filename_ANNmodel <<  "\n\n";
+    // Set up the training parameters
+    TermCriteria criteria(TermCriteria::MAX_ITER + TermCriteria::EPS, 300, 0.0001);
+    ann->setTermCriteria(criteria);
+    ann->setTrainMethod(ml::ANN_MLP::BACKPROP, 0.0001);
+
+    // Train the network
+    bool trained = ann->train(train_data, ml::ROW_SAMPLE, train_classes);
+
+    if (trained) {
+        cout << "\n\tTRAINING COMPLETED SUCCESSFULLY.\n";
+    }
+    else {
+        cout << "\n\tTRAINING FAILED.\n";
+    }
+
+    ann->save(filename_ANNmodel);
+    cout << "\n\tTRAINED MODEL SAVED AS: " << filename_ANNmodel << "\n\n";
 
     return 0;
 }
+
 
 // CASE 5
 // CREATE A FUNCTION TO TEST THE MODEL WITH THE TEST MATRIX AND GENERATE A CONFUSION MATRIX
@@ -580,7 +554,13 @@ int ANN_MLP_Test_Single(Ptr<ml::ANN_MLP>& annTRAINED, const string& imagePath)
     Mat sample = imread(imagePath);
     if (sample.empty())
     {
-        cerr << "ERROR: COULD NOT LOAD IMAGE FROM THE PROVIDED PATH." << endl;
+        cerr << "\tERROR: COULD NOT LOAD IMAGE FROM THE PROVIDED PATH." << endl;
+        return -1;
+    }
+
+    // Check the image dimensions
+    if (sample.cols != hog.winSize.width || sample.rows != hog.winSize.height) {
+        cerr << "\tERROR: THE IMAGE MUST HAVE DIMENSIONS " << hog.winSize.width << "x" << hog.winSize.height << " TO BE PROCESSED." << endl;
         return -1;
     }
 
@@ -592,7 +572,7 @@ int ANN_MLP_Test_Single(Ptr<ml::ANN_MLP>& annTRAINED, const string& imagePath)
     double minVal, maxVal;
     minMaxLoc(preprocSample, &minVal, &maxVal);
     if (maxVal == 0) {
-        cerr << "ERROR: THE IMAGE IS COMPLETELY BLACK." << endl;
+        cerr << "\tERROR: THE IMAGE IS COMPLETELY BLACK." << endl;
         return -1;
     }
     if (minVal == 0 && maxVal == 255) {
@@ -613,8 +593,19 @@ int ANN_MLP_Test_Single(Ptr<ml::ANN_MLP>& annTRAINED, const string& imagePath)
     Mat underTest = Mat::zeros(1, numFeatures, CV_32FC1);
     for (int k = 0; k < numFeatures; k++)
         underTest.at<float>(0, k) = featureVector[k];
-   
+
     // Prediction
-    int predictedClass = static_cast<int>(annTRAINED->predict(underTest, noArray()));
+    Mat response;
+    annTRAINED->predict(underTest, response);
+
+    // Get the predicted class and its probability
+    Point maxLoc;
+    minMaxLoc(response, 0, 0, 0, &maxLoc);
+    int predictedClass = maxLoc.x;
+    float confidence = response.at<float>(0, predictedClass);
+
+    cout << "Predicted class: " << predictedClass << endl;
+    cout << "Confidence: " << confidence << endl;
+
     return predictedClass;
 }
