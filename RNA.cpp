@@ -266,7 +266,7 @@ int main(void)
                 route = routePath + filename;
                 pred = ANN_MLP_Test_Single(annTRAINED, route, originalLabels);
 
-                cout << "\n\tPREDICTION: " << originalLabels[pred] << "\n\n";
+                cout << "\n";
                 system("pause");
                 break;
 
@@ -644,9 +644,6 @@ int ANN_MLP_Test_Single(Ptr<ml::ANN_MLP>& annTRAINED, const string& imagePath, c
     // Calculate confidence in percentage
     float confidencePercentage = confidence * 100.0f;
 
-    cout << "\n\tPREDICTED CLASS: " << originalLabels[predictedClass] << " (" << predictedClass << ")" << endl;
-    cout << "\tCONFIDENCE: " << confidencePercentage << "%" << endl;
-
     // Print all classes with their confidence percentages
     cout << "\n\tALL PREDICTIONS:" << endl;
     float totalPercentage = 0.0f;
@@ -660,6 +657,9 @@ int ANN_MLP_Test_Single(Ptr<ml::ANN_MLP>& annTRAINED, const string& imagePath, c
     cout << "\t----------------------------------" << endl;
     cout << "\t" << fixed << setprecision(1) << totalPercentage << "%\t"  "TOTAL PERCENTAGE" << endl;
 
+
+    cout << "\n\tPREDICTED CLASS: " << originalLabels[predictedClass] << " (" << predictedClass << ")" << endl;
+    cout << "\tCONFIDENCE: " << confidencePercentage << "%" << endl;
     return predictedClass;
 }
 
