@@ -1,0 +1,3 @@
+/Users/keylaanguiano/Documents/UG/SÉPTIMO SEMESTRE/INTELIGENCIA ARTIFICIAL/IA/build/CMakeFiles/RNA_2.3.dir
+/Users/keylaanguiano/Documents/UG/SÉPTIMO SEMESTRE/INTELIGENCIA ARTIFICIAL/IA/build/CMakeFiles/edit_cache.dir
+/Users/keylaanguiano/Documents/UG/SÉPTIMO SEMESTRE/INTELIGENCIA ARTIFICIAL/IA/build/CMakeFiles/rebuild_cache.dir

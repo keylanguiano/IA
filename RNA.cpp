@@ -69,7 +69,7 @@ int main(void)
     Ptr<ANN_MLP> annTRAINED;
 
     // CASE 6 VARIABLES:
-    string routePath = "./Images/TESTING/";
+    string routePath = "../Images/TRAINING DATASET/Berlin Sans FB/";
     string filename;
 	string route;
     int pred;
@@ -241,6 +241,8 @@ int main(void)
                     break;
                 }
 
+                // Keyla
+                // cout << "\tTHE SAMPLE MUST BE FOUND ON THE ROUTE ../Images/TESTING/" << endl;
                 cout << "\nNOTE: THE IMAGE FOR TESTING MUST HAVE DIMENSIONS " << hog.winSize.width << "x" << hog.winSize.height << endl;
                 cout << "\tTHE SAMPLE MUST BE FOUND ON THE ROUTE ./Images/TESTING/" << endl;
                 cout << "\tENTER FILE NAME: ";
@@ -289,6 +291,8 @@ void extractTextureFeatures(const Mat& image, vector<float>& features) {
 
 // PROCESS SAMPLES AND SAVE FEATURES
 void processImagesAndSaveFeatures() {
+// Keyla
+// string samplesPath = "../IMAGES/TRAINING DATASET/"; // Path to the samples folder
     string samplesPath = "./images/TRAINING DATASET"; // Path to the samples folder
     vector<vector<float>> data;
     vector<string> labels;
