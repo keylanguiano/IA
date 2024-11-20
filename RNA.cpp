@@ -16,9 +16,9 @@ namespace fs = std::filesystem;
 HOGDescriptor hog
 (
     Size(1024, 512), // winSize
-    Size(64, 64),   // blockSize
-    Size(32, 32),   // blockStride
-    Size(64, 64),   // cellSize
+    Size(128, 128),   // blockSize
+    Size(64, 64),   // blockStride
+    Size(128, 128),   // cellSize
     9,              // nbins
     1,              // derivAper
     -1,             // winSigma
@@ -75,7 +75,7 @@ int main(void)
     Ptr<ANN_MLP> annTRAINED;
 
     // CASE 6 VARIABLES:
-    string routePath = "./Images/TESTING/";
+    string routePath = "../Images/TRAINING DATASET/Berlin Sans FB/";
     string filename;
 	string route;
     int pred;
@@ -252,7 +252,7 @@ int main(void)
                     break;
                 }
 
-                cout << "\tTHE SAMPLE MUST BE FOUND ON THE ROUTE ./Images/TESTING/" << endl;
+                cout << "\tTHE SAMPLE MUST BE FOUND ON THE ROUTE ../Images/TESTING/" << endl;
                 cout << "\tENTER FILE NAME: ";
                 cin >> filename;
                 route = routePath + filename;
@@ -262,6 +262,7 @@ int main(void)
                 break;
 
             default:
+                exit(0);
                 break;
         }
     } while (1);
@@ -298,7 +299,7 @@ void extractTextureFeatures(const Mat& image, vector<float>& features) {
 
 // PROCESS SAMPLES AND SAVE FEATURES
 void processImagesAndSaveFeatures() {
-    string samplesPath = "./images/TRAINING SET"; // Path to the samples folder
+    string samplesPath = "../IMAGES/TRAINING DATASET/"; // Path to the samples folder
     vector<vector<float>> data;
     vector<string> labels;
 
